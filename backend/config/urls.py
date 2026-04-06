@@ -21,7 +21,7 @@ urlpatterns = [
     path("admin/",        admin.site.urls),
     path("api/accounts/", include("accounts.urls")),
     # Add other app URLs below:
-    # path("api/artworks/",  include("artworks.urls")),
+    path("api/artworks/",  include("artworks.urls")),
     # path("api/orders/",    include("orders.urls")),
     # path("api/purchase/",  include("purchase.urls")),
 ]

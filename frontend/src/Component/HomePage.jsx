@@ -58,27 +58,25 @@ export default function HomePage() {
               shopping_cart
             </button>
 
-            {isLoggedIn ? (
-              /* Logged-in: show name + logout */
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-stone-600 font-medium hidden md:block">
-                  {user?.full_name || user?.email}
-                </span>
-                {user?.role === "admin" && (
-                  <Link
-                    to="/admin/dashboard"
-                    className="text-xs font-semibold tracking-widest uppercase border border-stone-300 text-stone-600 px-4 py-1.5 rounded-full hover:bg-stone-100 transition-all duration-300"
-                  >
-                    Dashboard
-                  </Link>
-                )}
-                <button
-                  onClick={handleLogout}
-                  className="text-sm font-semibold tracking-widest uppercase border border-amber-700 text-amber-700 px-6 py-2 rounded-full hover:bg-amber-700 hover:text-white transition-all duration-300"
-                >
-                  Logout
-                </button>
-              </div>
+              {isLoggedIn ? (
+            /* Logged-in: show name + logout */
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-stone-600 font-medium hidden md:block">
+                {user?.full_name || user?.email}
+              </span>
+              <Link
+                to={user?.role === "admin" ? "/admin/dashboard" : "/dashboard"}
+                className="text-xs font-semibold tracking-widest uppercase border border-stone-300 text-stone-600 px-4 py-1.5 rounded-full hover:bg-stone-100 transition-all duration-300"
+              >
+                {user?.role === "admin" ? "Dashboard" : "My Account"}
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="text-sm font-semibold tracking-widest uppercase border border-amber-700 text-amber-700 px-6 py-2 rounded-full hover:bg-amber-700 hover:text-white transition-all duration-300"
+              >
+                Logout
+              </button>
+            </div>
             ) : (
               /* Logged-out: Sign In button */
               <Link

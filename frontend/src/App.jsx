@@ -1,16 +1,35 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import HomePage     from "./Component/HomePage";
-import LoginPage    from "./Component/Account/Login";
-import RegisterPage from "./Component/Account/Register";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import HomePage        from "./Component/HomePage";
+import LoginPage       from "./Component/Account/Login";
+import RegisterPage    from "./Component/Account/Register";
+import AdminDashboard  from "./Component/admin/AdminDashboard";
+import AdminInventory  from "./Component/admin/AdminInventory";
 import "./App.css";
+
+// ── Guard: only logged-in admins can access /admin/* ──────────────────────────
+function AdminRoute({ children }) {
+  const user  = JSON.parse(localStorage.getItem("user") || "null");
+  const token = localStorage.getItem("token");
+  if (!token || !user) return <Navigate to="/login" replace />;
+  if (user.role !== "admin") return <Navigate to="/" replace />;
+  return children;
+}
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/"         element={<HomePage />}     />
-        <Route path="/login"    element={<LoginPage />}    />
+        {/* Public */}
+        <Route path="/"         element={<HomePage />} />
+        <Route path="/login"    element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
+        {/* Admin */}
+        <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/inventory" element={<AdminRoute><AdminInventory /></AdminRoute>} />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
