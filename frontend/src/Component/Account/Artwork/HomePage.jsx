@@ -459,6 +459,7 @@ const applyFilters = () => {
                       artwork={aw}
                       index={i}
                       onAddToCart={(id, title) => toast.show(`"${title}" added to cart`)}
+                      onClick={() => navigate(`/artwork/${artwork.id}`)}
                     />
                   ))
             }

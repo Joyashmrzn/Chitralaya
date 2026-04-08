@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import HomePage        from "./Component/HomePage";
-import LoginPage       from "./Component/Account/Login";
-import RegisterPage    from "./Component/Account/Register";
-import AdminDashboard  from "./Component/admin/AdminDashboard";
-import AdminInventory  from "./Component/admin/AdminInventory";
+import HomePage from "./Component/Account/Artwork/HomePage";
+import LoginPage from "./Component/Account/Login";
+import RegisterPage from "./Component/Account/Register";
+import AdminDashboard from "./Component/admin/AdminDashboard";
+import AdminInventory from "./Component/admin/AdminInventory";
+import ArtworkDetailPage from "./Component/Account/Artwork/Artworkdetailpage";
 import "./App.css";
 
 // ── Guard: only logged-in admins can access /admin/* ──────────────────────────
@@ -30,6 +31,7 @@ function App() {
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/artwork/:id" element={<ArtworkDetailPage />} />
       </Routes>
     </BrowserRouter>
   );
