@@ -76,7 +76,7 @@ function ArtworkForm({ initial = {}, categories = [], mediums = [], onSave, onCl
     stock: initial.stock ?? 1,
     width: initial.width || "",
     height: initial.height || "",
-    unit: initial.unit || "cm",
+    orientation: initial.orientation || "",
     year_created: initial.year_created || "",
     status: initial.status || "draft",
   });
@@ -168,6 +168,14 @@ function ArtworkForm({ initial = {}, categories = [], mediums = [], onSave, onCl
           </Select>
         </Field>
       </div>
+      <Field label="Orientation">
+  <Select value={form.orientation} onChange={e => set("orientation", e.target.value)}>
+    <option value="">Auto-detect from dimensions</option>
+    <option value="portrait">Portrait (Vertical)</option>
+    <option value="landscape">Landscape (Horizontal)</option>
+    <option value="square">Square</option>
+  </Select>
+</Field>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Year Created">
@@ -490,6 +498,7 @@ export default function AdminInventory() {
                     <th className="px-5 py-3 text-left font-semibold">Category</th>
                     <th className="px-5 py-3 text-left font-semibold">Medium</th>
                     <th className="px-5 py-3 text-left font-semibold">Dimensions</th>
+                    <th className="px-5 py-3 text-left font-semibold">Orientation</th>
                     <th className="px-5 py-3 text-left font-semibold">Price</th>
                     <th className="px-5 py-3 text-left font-semibold">Stock</th>
                     <th className="px-5 py-3 text-left font-semibold">Status</th>
@@ -525,6 +534,9 @@ export default function AdminInventory() {
                       <td className="px-5 py-4 text-stone-500">{a.medium_name || "—"}</td>
                       <td className="px-5 py-4 text-stone-400 text-xs">
                         {a.width && a.height ? `${a.width}×${a.height} ${a.unit}` : "—"}
+                      </td>
+                      <td className="px-5 py-4 text-stone-400 text-xs capitalize">
+                        {a.orientation || "—"}
                       </td>
                       <td className="px-5 py-4 font-semibold text-stone-800">
                         ${Number(a.price).toLocaleString()}

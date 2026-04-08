@@ -38,6 +38,11 @@ class Medium(models.Model):
 
 
 class Artwork(models.Model):
+    ORIENTATION_CHOICES = [
+    ("portrait",  "Portrait"),
+    ("landscape", "Landscape"),
+    ("square",    "Square"),
+]
     UNIT_CHOICES = [
         ("cm", "Centimeters"),
         ("in", "Inches"),
@@ -49,7 +54,12 @@ class Artwork(models.Model):
         ("sold_out",  "Sold Out"),    # visible but cannot be purchased
         ("archived",  "Archived"),    # hidden, kept for records
     ]
-
+    orientation = models.CharField(
+        max_length=10,
+        choices=ORIENTATION_CHOICES,
+        blank=True,
+        null=True,
+     )
     # ── Core Info ─────────────────────────────────────────────────────────────
     title       = models.CharField(max_length=255)
     slug        = models.SlugField(max_length=255, unique=True, blank=True)

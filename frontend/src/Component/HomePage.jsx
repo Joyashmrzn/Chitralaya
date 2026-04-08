@@ -1,18 +1,167 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import './HomePage.css';
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const API_BASE = "http://localhost:8000/api/artworks";
+const PAGE_SIZE = 9;
 
-// Reusable image placeholder — replaced by Django image later
-const ImgPlaceholder = ({ label, className = "" }) => (
-  <div className={`bg-stone-200 flex items-center justify-center text-stone-400 text-sm italic w-full h-full ${className}`}>
-    {label || "Image — Django"}
+const COLOR_TONES = [
+  { color: "#fde68a", label: "Warm" },
+  { color: "#bfdbfe", label: "Cool" },
+  { color: "#d6d3d1", label: "Neutral" },
+  { color: "#fecdd3", label: "Rosy" },
+  { color: "#bbf7d0", label: "Fresh" },
+];
+
+// ── SCOPED STYLES ─────────────────────────────────────────────────────────────
+// All selectors are prefixed with .chitralaya-root to prevent CSS bleed
+
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const Icon = ({ name, fill = false, size, color, style = {} }) => (
+  <span
+    className={fill ? "mso-fill" : "mso"}
+    style={{ fontSize: size, color, ...style }}
+  >
+    {name}
+  </span>
+);
+
+const SkeletonCard = ({ stagger }) => (
+  <div className="artwork-card" style={stagger ? { marginTop: 40 } : {}}>
+    <div className="skel-img skeleton" />
+    <div className="skel-title skeleton" />
+    <div className="skel-artist skeleton" />
   </div>
 );
 
+// ── ARTWORK CARD ──────────────────────────────────────────────────────────────
+const ArtworkCard = ({ artwork, index, onAddToCart }) => {
+  const stagger = index % 3 === 1;
+const imageUrl = artwork.image_url
+  || `https://placehold.co/400x500/eeeeec/4e4639?text=${encodeURIComponent(artwork.title)}`;
+  
+  
+const aspectRatio = 
+  artwork.width && artwork.height
+    ? parseFloat(artwork.width) > parseFloat(artwork.height) ? "16/9"
+    : parseFloat(artwork.width) === parseFloat(artwork.height) ? "1/1"
+    : "4/5"
+  : "4/5";
+
+  const artist = artwork.artist_name || artwork.artist || "";
+  const medium = artwork.medium_name || (artwork.medium?.name) || "";
+  const price = parseFloat(artwork.price).toLocaleString();
+
+  return (
+    <div
+      className="artwork-card"
+      style={stagger ? { marginTop: 40 } : {}}
+      onClick={() => (window.location.href = `artwork.html?id=${artwork.id}`)}
+    >
+      <div className="card-image-wrap" style={{ aspectRatio }}>
+        <img
+          src={imageUrl}
+          alt={artwork.title}
+          loading="lazy"
+          onError={(e) => {
+            e.target.src = "https://placehold.co/400x500/eeeeec/4e4639?text=No+Image";
+          }}
+        />
+        <div className="card-overlay" />
+        {artwork.status === "sold_out" && <div className="card-badge">Sold Out</div>}
+        <button
+          className="card-add-btn"
+          onClick={(e) => { e.stopPropagation(); onAddToCart(artwork.id, artwork.title); }}
+        >
+          <Icon name="add_shopping_cart" color="var(--ch-primary)" size={20} />
+        </button>
+      </div>
+
+      <div className="card-info">
+        <div>
+          <div className="card-title">{artwork.title}</div>
+          {artist && <div className="card-artist">{artist}</div>}
+          {medium && <div className="card-medium">{medium}</div>}
+        </div>
+        <div className="card-price">${price}</div>
+      </div>
+
+      {artwork.rating && (
+        <div className="card-rating">
+          <Icon name="star" fill color="#f59e0b" size={13} />
+          <span className="rating-val">{parseFloat(artwork.rating).toFixed(1)}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── CATEGORY DROPDOWN ─────────────────────────────────────────────────────────
+const CatDropdown = ({ categories, loading }) => {
+  return (
+    <div className="nav-dropdown">
+      <button className="dropdown-trigger">
+        Categories <Icon name="expand_more" size={16} />
+      </button>
+      <div className="dropdown-menu">
+        {loading
+          ? <div className="dropdown-loading">Loading…</div>
+          : categories.length === 0
+            ? <div className="dropdown-loading">No categories</div>
+            : categories.map((c) => (
+                <button
+                  key={c.id}
+                  className="dropdown-item"
+                  onClick={() => (window.location.href = `categories.html?id=${c.id}`)}
+                >
+                  {c.name}
+                </button>
+              ))
+        }
+      </div>
+    </div>
+  );
+};
+
+// ── TOAST HOOK ────────────────────────────────────────────────────────────────
+function useToast() {
+  const [msg, setMsg] = useState("");
+  const [visible, setVisible] = useState(false);
+  const timer = useRef(null);
+  const show = useCallback((text) => {
+    setMsg(text); setVisible(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setVisible(false), 2800);
+  }, []);
+  return { msg, visible, show };
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [artworks, setArtworks]     = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [mediums, setMediums]       = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [catLoading, setCatLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
-  // ── Read auth state from localStorage ──────────────────────────────────────
+  const [minPrice, setMinPrice]             = useState("");
+  const [maxPrice, setMaxPrice]             = useState("");
+  const [selectedMedium, setSelectedMedium] = useState("");
+  const [selectedCat, setSelectedCat]       = useState("");
+  const [orientations, setOrientations]     = useState([]);
+  const [selectedColor, setSelectedColor]   = useState("");
+  const [availableOnly, setAvailableOnly]   = useState(false);
+  const [search, setSearch]                 = useState("");
+  const [sort, setSort]                     = useState("-created_at");
+  const [page, setPage]                     = useState(1);
+  const [committed, setCommitted]           = useState({});
+
+  const searchTimer = useRef(null);
+  const toast = useToast();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const token = localStorage.getItem("token");
   const user  = JSON.parse(localStorage.getItem("user") || "null");
   const isLoggedIn = !!token && !!user;
@@ -22,288 +171,402 @@ export default function HomePage() {
     localStorage.removeItem("user");
     navigate("/login");
   };
+    
 
+
+  // ── Load categories ──
+  useEffect(() => {
+    setCatLoading(true);
+    fetch(`${API_BASE}/categories/`)
+      .then((r) => r.ok ? r.json() : [])
+      .then(setCategories)
+      .catch(() => setCategories([]))
+      .finally(() => setCatLoading(false));
+  }, []);
+
+  // ── Load mediums ──
+  useEffect(() => {
+    fetch(`${API_BASE}/mediums/`)
+      .then((r) => r.ok ? r.json() : [])
+      .then(setMediums)
+      .catch(() => setMediums([]));
+  }, []);
+
+  // ── Fetch artworks ──
+  const loadArtworks = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (committed.minPrice)      params.set("min_price",  committed.minPrice);
+    if (committed.maxPrice)      params.set("max_price",  committed.maxPrice);
+    if (committed.medium)        params.set("medium",     committed.medium);
+    if (committed.category)      params.set("category",   committed.category);
+    if (committed.availableOnly) params.set("available",  "true");
+    if (committed.search)        params.set("search",     committed.search);
+    if (committed.orientations?.length)
+      params.set("orientation", committed.orientations.join(","));
+    params.set("ordering",  sort);
+    params.set("page",      page);
+    params.set("page_size", PAGE_SIZE);
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 850));
+      const res  = await fetch(`${API_BASE}/?${params}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setArtworks(data);
+        setTotalCount(data.length);
+      } else {
+        setArtworks(data.results ?? []);
+        setTotalCount(data.count ?? (data.results?.length ?? 0));
+      }
+    } catch {
+      setArtworks([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [committed, sort, page]);
+
+  useEffect(() => { loadArtworks(); }, [loadArtworks]);
+
+  // ── Handlers ──
+const applyFilters = () => {
+  setCommitted({ minPrice, maxPrice, medium: selectedMedium, category: selectedCat, availableOnly, search, orientations });
+  setPage(1);
+};
+
+  const handleSearch = (val) => {
+    setSearch(val);
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setCommitted((prev) => ({ ...prev, search: val }));
+      setPage(1);
+    }, 400);
+  };
+
+  const handleSort = (val) => { setSort(val); setPage(1); };
+
+  const toggleOrientation = (val) =>
+    setOrientations((prev) =>
+      prev.includes(val) ? prev.filter((o) => o !== val) : [...prev, val]
+    );
+
+  // ── Pagination ──
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const pageNums   = () => {
+    const nums = [];
+    const d    = 2;
+    for (let i = Math.max(1, page - d); i <= Math.min(totalPages, page + d); i++) nums.push(i);
+    return nums;
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // KEY CHANGE: wrap everything in <div className="chitralaya-root">
+  // so all CSS is scoped and cannot affect other pages
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-[#f9f9f7] text-stone-900 antialiased font-sans">
+    <div className="chitralaya-root">
+      {/* ── NAV ── */}
+      <nav className="nav">
+        <div className="nav-inner">
+          <button className="brand">Chitralaya</button>
+          <ul className="nav-links">
+            <li><button className="nav-btn active">Shop</button></li>
+            <li><CatDropdown categories={categories} loading={catLoading} /></li>
+            <li><button className="nav-btn">About</button></li>
+            <li><button className="nav-btn">Contact</button></li>
+          </ul>
+          <div className="nav-icons">
+          <button className="icon-btn" title="Cart" onClick={() => toast.show("Cart coming soon!")}>
+            <Icon name="shopping_cart" />
+          </button>
 
-      {/* ── Top Nav ── */}
-      <nav className="fixed top-0 w-full z-50 bg-stone-50/80 backdrop-blur-xl shadow-sm shadow-amber-900/5">
-        <div className="flex justify-between items-center px-12 py-6 w-full max-w-screen-2xl mx-auto">
-
-          {/* Brand */}
-          <Link to="/" className="font-serif text-2xl font-light tracking-widest text-stone-900">
-            Chitralaya
-          </Link>
-
-          {/* Nav links */}
-          <div className="hidden md:flex gap-10 font-serif text-lg tracking-tight">
-            {["Shop", "Categories", "About", "Contact"].map((item, i) => (
-              <a
-                key={item}
-                href="#"
-                className={
-                  i === 0
-                    ? "text-amber-700 border-b border-amber-700/30 pb-1"
-                    : "text-stone-600 hover:text-amber-600 transition-colors duration-300"
-                }
-              >
-                {item}
-              </a>
-            ))}
-          </div>
-
-          {/* Auth + Cart */}
-          <div className="flex items-center gap-5">
-            <button className="material-symbols-outlined text-stone-600 hover:text-amber-600 transition-colors">
-              shopping_cart
-            </button>
-
-              {isLoggedIn ? (
-            /* Logged-in: show name + logout */
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-stone-600 font-medium hidden md:block">
-                {user?.full_name || user?.email}
-              </span>
-              <Link
-                to={user?.role === "admin" ? "/admin/dashboard" : "/dashboard"}
-                className="text-xs font-semibold tracking-widest uppercase border border-stone-300 text-stone-600 px-4 py-1.5 rounded-full hover:bg-stone-100 transition-all duration-300"
-              >
-                {user?.role === "admin" ? "Dashboard" : "My Account"}
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-sm font-semibold tracking-widest uppercase border border-amber-700 text-amber-700 px-6 py-2 rounded-full hover:bg-amber-700 hover:text-white transition-all duration-300"
-              >
-                Logout
-              </button>
-            </div>
-            ) : (
-              /* Logged-out: Sign In button */
-              <Link
-                to="/login"
-                className="text-sm font-semibold tracking-widest uppercase border border-amber-700 text-amber-700 px-6 py-2 rounded-full hover:bg-amber-700 hover:text-white transition-all duration-300"
-              >
-                Sign In
-              </Link>
-            )}
+      {isLoggedIn ? (
+  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+    <span style={{ fontSize: "0.82rem", color: "var(--ch-on-surface-variant)", fontWeight: 300 }}>
+      {user?.full_name || user?.email}
+    </span>
+    <button
+      onClick={() => navigate(user?.role === "admin" ? "/admin/dashboard" : "/dashboard")}
+      style={{
+        fontFamily: "'Cormorant Garamond', serif",fontSize: "1rem",letterSpacing: "0.03em",color: "var(--ch-primary)",background: "none",border: "none",cursor: "pointer",padding: "0",borderBottom: "1px solid var(--ch-primary-light)",
+      }}
+    >
+      {user?.role === "admin" ? "Dashboard" : "Customer Dashboard"}
+    </button>
+    <button
+      onClick={() => setShowLogoutModal(true)}
+      style={{
+        fontFamily: "'DM Sans', sans-serif",fontSize: "0.78rem",letterSpacing: "0.08em",textTransform: "uppercase",color: "var(--ch-primary)",background: "transparent",border: "1px solid var(--ch-primary)",borderRadius: "4px",padding: "6px 14px",cursor: "pointer",transition: "background 0.2s, color 0.2s",
+      }}
+      onMouseEnter={e => {
+        e.target.style.background = "var(--ch-primary)";
+        e.target.style.color = "white";
+      }}
+      onMouseLeave={e => {
+        e.target.style.background = "transparent";
+        e.target.style.color = "var(--ch-primary)";
+      }}
+    >
+      Logout
+    </button>
+  </div>
+) : (
+  <button className="apply-btn" onClick={() => navigate("/login")}>Sign In</button>
+)}
           </div>
         </div>
       </nav>
 
-      {/* ── Hero ── */}
-      <section className="relative h-screen flex items-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <ImgPlaceholder label="Hero Painting — Django" />
-          <div className="absolute inset-0 bg-black/40" />
-        </div>
-        <div className="relative z-10 px-12 md:px-24 max-w-4xl">
-          <span className="text-white/90 tracking-[0.3em] uppercase text-xs mb-6 block">
-            Artisanal Curation
-          </span>
-          <h1 className="font-serif text-6xl md:text-8xl text-white font-light leading-tight mb-8 drop-shadow-lg">
-            Bring Art Into <br />
-            <span className="italic">Your Space</span>
-          </h1>
-          <Link
-            to="/register"
-            className="inline-block bg-gradient-to-r from-amber-800 to-amber-600 text-white px-10 py-4 rounded-full text-sm tracking-widest uppercase hover:opacity-90 transition-all shadow-xl shadow-amber-900/20"
-          >
-            Shop Collections
-          </Link>
-        </div>
-      </section>
+      {/* ── PAGE ── */}
+      <div className="page-wrapper">
 
-      {/* ── Curated Highlights ── */}
-      <section className="py-32 px-12 max-w-screen-2xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-24">
-          <div className="max-w-xl">
-            <h2 className="font-serif text-4xl md:text-5xl font-light mb-6">
-              Curated Highlights
-            </h2>
-            <p className="text-stone-500 text-lg leading-relaxed">
-              Hand-selected pieces from emerging global artist, chosen for
-              their ability to transform a room from a structure into a home.
-            </p>
-          </div>
-          <div className="mt-8 md:mt-0">
-            <a href="#" className="group flex items-center gap-2 text-amber-700 font-medium">
-              View Gallery
-              <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">
-                arrow_forward
-              </span>
-            </a>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-16">
-          <div className="md:col-span-7 flex flex-col gap-6">
-            <div className="aspect-[4/5] overflow-hidden rounded-lg bg-stone-200 shadow-sm">
-              <ImgPlaceholder label="Artwork — Django" />
-            </div>
-            <div className="pt-4">
-              <h3 className="font-serif text-2xl font-light">Ethereal Morning</h3>
-              <p className="text-stone-400 italic">by Elena Rostova</p>
-              <p className="text-amber-700 mt-2 font-semibold">$1,240</p>
+        {/* ── SIDEBAR ── */}
+        <aside>
+          {/* Price Range */}
+          <div className="filter-section">
+            <h3>Price Range</h3>
+            <div className="price-inputs">
+              <input className="price-input" type="number" placeholder="Min $" min="0"
+                value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
+              <span className="price-sep">–</span>
+              <input className="price-input" type="number" placeholder="Max $" min="0"
+                value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
             </div>
           </div>
-          <div className="md:col-span-5 md:pt-32 flex flex-col gap-6">
-            <div className="aspect-square overflow-hidden rounded-lg bg-stone-200 shadow-sm">
-              <ImgPlaceholder label="Artwork — Django" />
-            </div>
-            <div className="pt-4">
-              <h3 className="font-serif text-2xl font-light">Urban Echoes</h3>
-              <p className="text-stone-400 italic">by Marcus Thorne</p>
-              <p className="text-amber-700 mt-2 font-semibold">$890</p>
+
+          {/* Canvas Style */}
+          <div className="filter-section">
+            <h3>Canvas Style</h3>
+            <div className="chip-group">
+              <div
+                className={`chip${selectedMedium === "" ? " active" : ""}`}
+                onClick={() => setSelectedMedium("")}
+              >All</div>
+              {mediums.map((m) => (
+                <div
+                  key={m.id}
+                  className={`chip${selectedMedium === m.id ? " active" : ""}`}
+                  onClick={() => setSelectedMedium(m.id)}
+                >{m.name}</div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ── Explore Movements ── */}
-      <section className="py-24 bg-stone-50">
-        <div className="max-w-screen-2xl mx-auto px-12">
-          <h2 className="font-serif text-center text-3xl font-light mb-16 tracking-widest uppercase">
-            Explore Movements
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {["Abstract", "Nature", "Modern", "Spiritual"].map((cat) => (
-              <div key={cat} className="group cursor-pointer">
-                <div className="aspect-[3/4] rounded-lg overflow-hidden relative mb-4 bg-stone-200">
-                  <ImgPlaceholder label={`${cat} — Django`} />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
-                  <div className="absolute bottom-6 left-6 text-white">
-                    <p className="font-serif text-xl font-light">{cat}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          {/* Category */}
+          <div className="filter-section">
+            <h3>Category</h3>
+            <select className="cat-select" value={selectedCat}
+              onChange={(e) => setSelectedCat(e.target.value)}>
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
-        </div>
-      </section>
 
-      {/* ── Artist Spotlight ── */}
-      <section className="py-32 bg-[#f9f9f7]">
-        <div className="max-w-screen-2xl mx-auto px-12 flex flex-col md:flex-row gap-20 items-center">
-          <div className="flex-1 order-2 md:order-1">
-            <span className="text-amber-700 font-medium tracking-widest uppercase text-xs mb-4 block">
-              Artist Spotlight
-            </span>
-            <h2 className="font-serif text-5xl font-light mb-8">Sofia Chen</h2>
-            <p className="text-stone-500 text-lg leading-relaxed mb-8 italic">
-              "My work is a dialogue between the silence of the canvas and the
-              noise of emotion."
-            </p>
-            <div className="h-px w-24 bg-amber-700 mb-6" />
-            <p className="text-stone-500 leading-relaxed mb-10">
-              Based in Shanghai, Sofia's contemporary approach to traditional
-              ink washing has earned her international acclaim.
-            </p>
-            <button className="border border-stone-300 px-8 py-3 rounded-full hover:bg-stone-100 transition-colors text-sm uppercase tracking-wider">
-              Read Biography
+          {/* Orientation */}
+          <div className="filter-section">
+            <h3>Orientation</h3>
+            <div className="check-list">
+              {[["portrait","Vertical Portrait"],["landscape","Horizontal Landscape"],["square","Square Format"]]
+                .map(([val, label]) => (
+                  <label key={val} className="check-label">
+                    <input type="checkbox" checked={orientations.includes(val)}
+                      onChange={() => toggleOrientation(val)} />
+                    <span>{label}</span>
+                  </label>
+                ))}
+            </div>
+          </div>
+
+          {/* Availability */}
+          <div className="filter-section">
+            <h3>Availability</h3>
+            <div className="toggle-row">
+              <label className="tog-wrap">
+                <input type="checkbox" checked={availableOnly}
+                  onChange={(e) => setAvailableOnly(e.target.checked)} />
+                <span className="tog-slider" />
+              </label>
+              <span>Available Only</span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="apply-btn" onClick={applyFilters}>Apply Filters</button>
+            <button
+              className="apply-btn"
+              style={{ background: "transparent", color: "var(--ch-primary)", border: "1px solid var(--ch-primary)" }}
+              onMouseEnter={e => { e.target.style.background = "var(--ch-surface-container)"; }}
+              onMouseLeave={e => { e.target.style.background = "transparent"; }}
+              onClick={() => {
+                setMinPrice("");
+                setMaxPrice("");
+                setSelectedMedium("");
+                setSelectedCat("");
+                setOrientations([]);
+                setSelectedColor("");
+                setAvailableOnly(false);
+                setSearch("");
+                setSort("-created_at");
+                setPage(1);
+                setCommitted({});
+              }}
+            >
+              Reset
             </button>
           </div>
-          <div className="flex-1 order-1 md:order-2 grid grid-cols-2 gap-4">
-            <div className="col-span-2 aspect-[16/9] rounded-lg overflow-hidden bg-stone-200">
-              <ImgPlaceholder label="Artist portrait — Django" />
-            </div>
-            <div className="aspect-square rounded-lg overflow-hidden bg-stone-200">
-              <ImgPlaceholder label="Detail — Django" />
-            </div>
-            <div className="aspect-square rounded-lg overflow-hidden bg-stone-200">
-              <ImgPlaceholder label="Art piece — Django" />
-            </div>
-          </div>
-        </div>
-      </section>
+        </aside>
 
-      {/* ── Testimonial ── */}
-      <section className="py-24 bg-stone-100">
-        <div className="max-w-4xl mx-auto px-12 text-center">
-          <span
-            className="material-symbols-outlined text-4xl text-amber-700/40 mb-8 block"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            format_quote
-          </span>
-          <p className="font-serif text-3xl font-light leading-relaxed mb-8 italic text-stone-800">
-            "The painting I received from Chitralaya didn't just decorate my
-            room — it changed the entire energy of my home."
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-stone-300">
-              <ImgPlaceholder label="" />
+        {/* ── GALLERY ── */}
+        <div className="gallery-main">
+          <div className="gallery-header">
+            <div>
+              <h1>The Collection</h1>
+              <p>Discover original oil and acrylic masterpieces curated from independent artists worldwide.</p>
             </div>
-            <div className="text-left">
-              <p className="font-semibold text-stone-900">Julianne Moore</p>
-              <p className="text-sm text-stone-400 uppercase tracking-widest">Interior Designer</p>
-            </div>
-          </div>
-          <div className="flex justify-center gap-2 mt-12">
-            <div className="w-2 h-2 rounded-full bg-amber-700" />
-            <div className="w-2 h-2 rounded-full bg-stone-300" />
-            <div className="w-2 h-2 rounded-full bg-stone-300" />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Newsletter ── */}
-      <section className="py-32 bg-stone-900 text-stone-50 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-700/10 rounded-full blur-3xl -mr-48 -mt-48" />
-        <div className="max-w-screen-xl mx-auto px-12 relative z-10">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-16">
-            <div className="max-w-xl">
-              <h2 className="font-serif text-4xl font-light mb-6">
-                Join the Private Collection
-              </h2>
-              <p className="text-stone-400 text-lg">
-                Receive exclusive previews of new collections, artist
-                interviews, and curator's notes directly in your inbox.
-              </p>
-            </div>
-            <div className="w-full max-w-md">
-              <div className="flex flex-col gap-4">
-                <div className="relative">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Address"
-                    className="w-full bg-transparent border-b border-stone-700 py-4 focus:border-amber-600 outline-none text-lg transition-colors placeholder:text-stone-600"
-                  />
-                  <button className="absolute right-0 bottom-4 text-amber-500 uppercase text-sm font-semibold tracking-widest hover:text-amber-300 transition-colors">
-                    Subscribe
-                  </button>
-                </div>
-                <p className="text-[10px] text-stone-500 uppercase tracking-tighter">
-                  By subscribing you agree to our Privacy Policy
-                </p>
+            <div className="gallery-controls">
+              <div className="search-wrap">
+                <span className="mso search-icon">search</span>
+                <input className="search-input" type="text" placeholder="Find a piece…"
+                  value={search} onChange={(e) => handleSearch(e.target.value)} />
               </div>
+              <select className="sort-select" value={sort} onChange={(e) => handleSort(e.target.value)}>
+                <option value="-created_at">Newest</option>
+                <option value="price">Price: Low to High</option>
+                <option value="-price">Price: High to Low</option>
+              </select>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ── Footer ── */}
-      <footer className="w-full py-16 bg-stone-100">
-        <div className="flex flex-col items-center gap-8 px-8 max-w-screen-2xl mx-auto">
-          <div className="font-serif text-2xl italic text-stone-800">Chitralaya</div>
-          <div className="flex gap-12 text-sm tracking-wide text-stone-500">
-            {["Privacy Policy", "Terms of Service", "Shipping Info"].map((link) => (
-              <a key={link} href="#" className="hover:text-stone-900 transition-opacity opacity-80 hover:opacity-100">
-                {link}
-              </a>
-            ))}
+          {/* Grid */}
+          <div className="artwork-grid">
+            {loading
+              ? [0,1,2,3,4,5].map((i) => <SkeletonCard key={i} stagger={i % 3 === 1} />)
+              : artworks.length === 0
+                ? (
+                  <div className="empty-state">
+                    <Icon name="search_off" size={48} color="var(--ch-outline-variant)" />
+                    <h3>No artworks found</h3>
+                    <p>Try adjusting your filters or search term.</p>
+                  </div>
+                )
+                : artworks.map((aw, i) => (
+                    <ArtworkCard
+                      key={aw.id}
+                      artwork={aw}
+                      index={i}
+                      onAddToCart={(id, title) => toast.show(`"${title}" added to cart`)}
+                    />
+                  ))
+            }
           </div>
-          <div className="flex gap-6 mt-4">
-            {["brand_awareness", "public", "mail"].map((icon) => (
-              <span key={icon} className="material-symbols-outlined text-stone-400 cursor-pointer hover:text-amber-700 transition-colors">
-                {icon}
-              </span>
-            ))}
-          </div>
-          <p className="text-stone-400 text-xs mt-8">© 2024 Chitralaya. All rights reserved.</p>
+
+          {/* Pagination */}
+          {!loading && totalPages > 1 && (
+            <div className="pagination">
+              <button className="page-btn" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+                <Icon name="chevron_left" />
+              </button>
+
+              {page > 3 && (
+                <>
+                  <button className="page-btn" onClick={() => setPage(1)}>1</button>
+                  {page > 4 && <span className="page-ellipsis">…</span>}
+                </>
+              )}
+
+              {pageNums().map((n) => (
+                <button
+                  key={n}
+                  className={`page-btn${n === page ? " active" : ""}`}
+                  onClick={() => setPage(n)}
+                >{n}</button>
+              ))}
+
+              {page < totalPages - 2 && (
+                <>
+                  {page < totalPages - 3 && <span className="page-ellipsis">…</span>}
+                  <button className="page-btn" onClick={() => setPage(totalPages)}>{totalPages}</button>
+                </>
+              )}
+
+              <button className="page-btn" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
+                <Icon name="chevron_right" />
+              </button>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* ── FOOTER ── */}
+      <footer>
+        <div className="footer-brand">Chitralaya</div>
+        <div className="footer-links">
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+          <a href="/shipping">Shipping Info</a>
+        </div>
+        <small>© 2025 Chitralaya. All rights reserved.</small>
       </footer>
+
+      {/* ── TOAST ── */}
+      <div className={`toast${toast.visible ? " show" : ""}`}>{toast.msg}</div>
+      {/* ── LOGOUT MODAL ── */}
+{showLogoutModal && (
+  <div style={{
+    position: "fixed", inset: 0, zIndex: 999,background: "rgba(26,28,27,0.45)",backdropFilter: "blur(4px)",display: "flex", alignItems: "center", justifyContent: "center",
+  }}>
+    <div style={{
+      background: "var(--ch-surface)",border: "1px solid var(--ch-outline-variant)",borderRadius: "8px",padding: "48px 40px",maxWidth: 380, width: "90%",display: "flex", flexDirection: "column", alignItems: "center", gap: 24,boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
+    }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%",background: "var(--ch-surface-container)",display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <Icon name="logout" size={22} color="var(--ch-primary)" />
+      </div>
+
+      <div style={{ textAlign: "center" }}>
+        <div style={{
+          fontFamily: "'Cormorant Garamond', serif",fontSize: "1.5rem", fontWeight: 400,color: "var(--ch-on-surface)", marginBottom: 8,
+        }}>
+          Leaving so soon?
+        </div>
+        <div style={{
+          fontSize: "0.85rem", fontWeight: 300,color: "var(--ch-on-surface-variant)", lineHeight: 1.6,
+        }}>
+          Are you sure you want to logout of your Chitralaya account?
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 12, width: "100%" }}>
+        <button
+          onClick={() => setShowLogoutModal(false)}
+          style={{
+            flex: 1, padding: "10px 0",background: "transparent",border: "1px solid var(--ch-outline-variant)",borderRadius: "4px", cursor: "pointer",fontFamily: "'DM Sans', sans-serif",fontSize: "0.8rem", letterSpacing: "0.06em",
+            textTransform: "uppercase",color: "var(--ch-on-surface-variant)",transition: "background 0.2s",
+          }}
+          onMouseEnter={e => e.target.style.background = "var(--ch-surface-container)"}
+          onMouseLeave={e => e.target.style.background = "transparent"}
+        >
+          Stay
+        </button>
+        <button
+          onClick={handleLogout}
+          style={{
+            flex: 1, padding: "10px 0",background: "var(--ch-primary)",border: "1px solid var(--ch-primary)",borderRadius: "4px", cursor: "pointer",fontFamily: "'DM Sans', sans-serif",fontSize: "0.8rem", letterSpacing: "0.06em",textTransform: "uppercase",color: "white",transition: "background 0.2s",
+          }}
+          onMouseEnter={e => e.target.style.background = "#5d4201"}
+          onMouseLeave={e => e.target.style.background = "var(--ch-primary)"}
+        >
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

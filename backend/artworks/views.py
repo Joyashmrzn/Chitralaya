@@ -179,6 +179,9 @@ class ArtworkListCreateView(APIView):
             qs = qs.filter(price__gte=min_price)
         if max_price:
             qs = qs.filter(price__lte=max_price)
+        orientation = request.query_params.get("orientation")
+        if orientation:
+            qs = qs.filter(orientation__in=orientation.split(","))
 
         serializer = ArtworkListSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)

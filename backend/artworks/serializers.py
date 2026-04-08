@@ -47,7 +47,6 @@ class MediumSerializer(serializers.ModelSerializer):
 
 
 class ArtworkListSerializer(serializers.ModelSerializer):
-    """Lightweight serializer for list views."""
     category_name = serializers.CharField(source="category.name", read_only=True)
     medium_name   = serializers.CharField(source="medium.name",   read_only=True)
     image_url     = serializers.SerializerMethodField()
@@ -58,6 +57,7 @@ class ArtworkListSerializer(serializers.ModelSerializer):
             "id", "title", "slug", "category", "category_name",
             "medium", "medium_name", "price", "stock", "status",
             "image_url", "year_created", "created_at",
+            "width", "height", "unit", "orientation", 
         ]
 
     def get_image_url(self, obj):
@@ -81,7 +81,7 @@ class ArtworkDetailSerializer(serializers.ModelSerializer):
             "category", "category_name", "medium", "medium_name",
             "width", "height", "unit", "dimensions_display",
             "year_created", "price", "stock", "status",
-            "image", "image_url", "created_at", "updated_at",
+            "image", "image_url", "created_at", "updated_at","orientation",
         ]
         read_only_fields = ["slug", "created_at", "updated_at"]
 

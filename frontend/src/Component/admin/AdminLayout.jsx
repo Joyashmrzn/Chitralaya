@@ -38,7 +38,6 @@ const NAV = [
     ),
   },
 ];
-
 export default function AdminLayout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,14 +53,16 @@ export default function AdminLayout({ children }) {
     <div className="flex min-h-screen bg-[#f4f4f2]">
 
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside className="fixed left-0 top-0 h-screen w-56 bg-stone-900 flex flex-col z-40">
+      <aside className="fixed left-0 top-0 h-screen w-56 flex flex-col z-40"
+        style={{ background: "#2C1810" }}>
 
         {/* Brand */}
-        <div className="px-6 pt-7 pb-5 border-b border-stone-800">
-          <Link to="/" className="font-serif text-lg font-light tracking-[0.2em] text-white block">
+        <div className="px-6 pt-7 pb-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <Link to="/" className="font-serif text-lg font-light tracking-[0.2em] block"
+            style={{ color: "#f5f0ea" }}>
             Chitralaya
           </Link>
-          <p className="text-stone-500 text-[9px] uppercase tracking-widest mt-0.5">
+          <p className="text-[9px] uppercase tracking-widest mt-0.5" style={{ color: "#a0826d" }}>
             Admin Console
           </p>
         </div>
@@ -75,10 +76,20 @@ export default function AdminLayout({ children }) {
                 key={to}
                 to={to}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  active
-                    ? "bg-amber-700/20 text-amber-400 border-l-2 border-amber-500 pl-[10px]"
-                    : "text-stone-400 hover:bg-stone-800 hover:text-stone-100"
+                  active ? "pl-[10px]" : ""
                 }`}
+                style={active
+                  ? {
+                      background: "rgba(180,100,40,0.18)",
+                      color: "#d97706",
+                      borderLeft: "2px solid #d97706",
+                    }
+                  : {
+                      color: "#c4a882",
+                    }
+                }
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
               >
                 {icon}
                 {label}
@@ -88,21 +99,33 @@ export default function AdminLayout({ children }) {
         </nav>
 
         {/* User block + Logout */}
-        <div className="px-3 pb-5 space-y-1 border-t border-stone-800 pt-4">
+        <div className="px-3 pb-5 space-y-1 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
           <div className="flex items-center gap-2.5 px-3 py-2">
-            <div className="w-7 h-7 rounded-full bg-amber-700/30 flex items-center justify-center text-amber-400 text-xs font-bold shrink-0">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              style={{ background: "rgba(180,100,40,0.25)", color: "#d97706" }}>
               {(user?.full_name?.[0] || "A").toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="text-stone-200 text-xs font-medium truncate">
+              <p className="text-xs font-medium truncate" style={{ color: "#e8ddd4" }}>
                 {user?.full_name || "Admin"}
               </p>
-              <p className="text-stone-500 text-[9px] uppercase tracking-wider">Artist · Owner</p>
+              <p className="text-[9px] uppercase tracking-wider" style={{ color: "#a0826d" }}>
+                Artist · Owner
+              </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm text-stone-400 hover:bg-red-900/20 hover:text-red-400 transition-all duration-150"
+            className="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-sm transition-all duration-150"
+            style={{ color: "#a0826d" }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "rgba(180,40,40,0.15)";
+              e.currentTarget.style.color = "#f87171";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "#a0826d";
+            }}
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
               <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
