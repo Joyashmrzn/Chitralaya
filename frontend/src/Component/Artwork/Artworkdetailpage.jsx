@@ -244,9 +244,27 @@ export default function ArtworkDetailPage() {
   }, [id]);
 
   // ── Cart ──
-  const handleAddToCart = () => {
+const handleAddToCart = async () => {
+  if (!isLoggedIn) {
+    toast.show("Please sign in to add to cart");
+    setTimeout(() => navigate("/login"), 1200);
+    return;
+  }
+  try {
+    const res = await fetch("http://localhost:8000/api/purchase/cart/add/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Token ${token}`,
+      },
+      body: JSON.stringify({ artwork_id: artwork.id, quantity: qty }),
+    });
+    if (!res.ok) throw new Error();
     toast.show(`"${artwork.title}" added to cart`);
-  };
+  } catch {
+    toast.show("Failed to add to cart. Try again.");
+  }
+};
 
   // ── Purchase ──
   const handlePurchaseClick = () => {
@@ -319,7 +337,7 @@ export default function ArtworkDetailPage() {
             <span style={{ color: "var(--ch-primary)" }}>{artwork?.title || "…"}</span>
           </div>
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ch-on-surface-variant)" }} onClick={() => toast.show("Cart coming soon!")}>
+            <button className="icon-btn" title="Cart" onClick={() => navigate("/cart")}>
               <Icon name="shopping_cart" />
             </button>
             {isLoggedIn
@@ -448,14 +466,14 @@ export default function ArtworkDetailPage() {
 
                 {/* Qty + Actions */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  {/* <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                     <span style={{ fontSize: "0.75rem", letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--ch-on-surface-variant)" }}>Qty</span>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <button className="qty-btn" onClick={() => setQty(q => Math.max(1, q - 1))}><Icon name="remove" size={16} /></button>
                       <span style={{ minWidth: 28, textAlign: "center", fontWeight: 500 }}>{qty}</span>
                       <button className="qty-btn" onClick={() => setQty(q => q + 1)}><Icon name="add" size={16} /></button>
                     </div>
-                  </div>
+                  </div> */}
 
                   <div style={{ display: "flex", gap: 12 }}>
                     <button className="outline-btn" disabled={isSold} onClick={handleAddToCart}>

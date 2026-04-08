@@ -37,7 +37,8 @@ const SkeletonCard = ({ stagger }) => (
 
 // ── ARTWORK CARD ──────────────────────────────────────────────────────────────
 const ArtworkCard = ({ artwork, index, onAddToCart }) => {
-  const stagger = index % 3 === 1;
+const navigate = useNavigate();
+const stagger = index % 3 === 1;
 const imageUrl = artwork.image_url
   || `https://placehold.co/400x500/eeeeec/4e4639?text=${encodeURIComponent(artwork.title)}`;
   
@@ -57,7 +58,7 @@ const aspectRatio =
     <div
       className="artwork-card"
       style={stagger ? { marginTop: 40 } : {}}
-      onClick={() => (window.location.href = `artwork.html?id=${artwork.id}`)}
+      onClick={() => navigate(`/artwork/${artwork.id}`)}
     >
       <div className="card-image-wrap" style={{ aspectRatio }}>
         <img
@@ -274,11 +275,12 @@ const applyFilters = () => {
           <ul className="nav-links">
             <li><button className="nav-btn active">Shop</button></li>
             <li><CatDropdown categories={categories} loading={catLoading} /></li>
+            <li><button className="nav-btn" >Order</button></li>
             <li><button className="nav-btn">About</button></li>
             <li><button className="nav-btn">Contact</button></li>
           </ul>
           <div className="nav-icons">
-          <button className="icon-btn" title="Cart" onClick={() => toast.show("Cart coming soon!")}>
+          <button className="icon-btn" title="Cart" onClick={() => navigate("/cart")}>
             <Icon name="shopping_cart" />
           </button>
 
@@ -425,7 +427,7 @@ const applyFilters = () => {
           <div className="gallery-header">
             <div>
               <h1>The Collection</h1>
-              <p>Discover original oil and acrylic masterpieces curated from independent artists worldwide.</p>
+              <p>Discover original oil and acrylic masterpieces .</p>
             </div>
             <div className="gallery-controls">
               <div className="search-wrap">
@@ -459,7 +461,6 @@ const applyFilters = () => {
                       artwork={aw}
                       index={i}
                       onAddToCart={(id, title) => toast.show(`"${title}" added to cart`)}
-                      onClick={() => navigate(`/artwork/${artwork.id}`)}
                     />
                   ))
             }
