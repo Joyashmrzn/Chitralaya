@@ -45,7 +45,7 @@ function useToast() {
   const show = useCallback((text) => {
     setMsg(text); setVisible(true);
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setVisible(false), 2800);
+    timerRef.current = setTimeout(() => setVisible(false), 3800);
   }, []);
   return { msg, visible, show };
 }
@@ -276,11 +276,112 @@ const handleAddToCart = async () => {
     setShowPurchase(true);
   };
 
-  const handleConfirmPurchase = (method) => {
-    setShowPurchase(false);
-    const methodLabel = { cod: "Cash on Delivery", esewa: "eSewa", khalti: "Khalti" }[method];
-    toast.show(`Order placed via ${methodLabel}!`);
-  };
+const handleConfirmPurchase = async (method) => {
+  const artworkIds = [artwork.id];
+
+  // ── COD ──
+  if (method === "cod") {
+    try {
+      const res = await fetch("http://localhost:8000/api/payment/cod/", {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ artwork_ids: artworkIds }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowPurchase(false);
+        toast.show("Order placed! Pay on delivery.");
+      } else {
+        toast.show(data.error || "Order failed.");
+      }
+    } catch {
+      toast.show("Network error. Try again.");
+    }
+    return;
+  }
+
+  // ── Khalti ──
+  if (method === "khalti") {
+    try {
+      const res = await fetch("http://localhost:8000/api/payment/khalti/initiate/", {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ artwork_ids: artworkIds }),
+      });
+      const data = await res.json();
+      if (data.success && data.payment_url) {
+        window.location.href = data.payment_url;
+      } else {
+        toast.show("Khalti initiation failed.");
+      }
+    } catch {
+      toast.show("Network error. Try again.");
+    }
+    return;
+  }
+
+// ── eSewa ──
+if (method === "esewa") {
+  try {
+    const res = await fetch("http://localhost:8000/api/payment/esewa/initiate/", {
+      method: "POST",
+      headers: {
+        "Authorization": `Token ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ artwork_ids: artworkIds }),
+    });
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      toast.show(data.error || "eSewa initiation failed.");
+      return;
+    }
+
+    // eSewa requires a form POST — build and submit it dynamically
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = data.payment_url;
+
+    const fields = [
+      ["amount",                  data.amount],
+      ["tax_amount",              data.tax_amount],
+      ["service_charge",          data.service_charge],
+      ["delivery_charge",         data.delivery_charge],
+      ["total_amount",            data.total_amount],
+      ["transaction_uuid",        data.transaction_uuid],
+      ["product_code",            data.product_code],
+      ["product_service_charge",  data.product_service_charge],
+      ["product_delivery_charge", data.product_delivery_charge],
+      ["success_url",             data.success_url],
+      ["failure_url",             data.failure_url],
+      ["signed_field_names",      data.signed_field_names],
+      ["signature",               data.signature],
+    ];
+
+    fields.forEach(([name, value]) => {
+      const input = document.createElement("input");
+      input.type  = "hidden";
+      input.name  = name;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+
+  } catch {
+    toast.show("Network error. Try again.");
+  }
+  return;
+}
+};
 
   // ── Images ──
   const images = artwork

@@ -6,6 +6,9 @@ import AdminDashboard from "./Component/admin/AdminDashboard";
 import AdminInventory from "./Component/admin/AdminInventory";
 import ArtworkDetailPage from "./Component/Artwork/Artworkdetailpage";
 import CartPage from "./Component/user/CartPage";
+import PaymentSuccess from "./Component/user/PaymentSuccess";
+import PaymentFailure from "./Component/user/PaymentFailure";
+import Dashboard from "./Component/user/dashboard";
 import "./App.css";
 
 // ── Guard: only logged-in admins can access /admin/* ──────────────────────────
@@ -29,13 +32,19 @@ function App() {
         {/* Admin */}
         <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/inventory" element={<AdminRoute><AdminInventory /></AdminRoute>} />
-
+        {/* User */}
+        <Route path="/user/dashboard" element={<Dashboard/>} />
         {/* Fallback */}
         <Route path="/artwork/:id" element={<ArtworkDetailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
 
         {/* Cart */}
         <Route path="/cart" element={<CartPage />} />
+
+
+        {/* Payment */}
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/failure" element={<PaymentFailure />} />
       </Routes>
     </BrowserRouter>
   );

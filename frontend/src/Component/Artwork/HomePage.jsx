@@ -290,7 +290,7 @@ const applyFilters = () => {
       {user?.full_name || user?.email}
     </span>
     <button
-      onClick={() => navigate(user?.role === "admin" ? "/admin/dashboard" : "/dashboard")}
+      onClick={() => navigate(user?.role === "admin" ? "/admin/dashboard" : "/user/dashboard")}
       style={{
         fontFamily: "'Cormorant Garamond', serif",fontSize: "1rem",letterSpacing: "0.03em",color: "var(--ch-primary)",background: "none",border: "none",cursor: "pointer",padding: "0",borderBottom: "1px solid var(--ch-primary-light)",
       }}

@@ -9,11 +9,7 @@ const Icon = ({ name, fill = false, size = 22, color, style = {} }) => (
     style={{ fontSize: size, color, lineHeight: 1, verticalAlign: "middle", ...style }}
   >{name}</span>
 );
-const handleConfirmPurchase = (method) => {
-    setShowPurchase(false);
-    const methodLabel = { cod: "Cash on Delivery", esewa: "eSewa", khalti: "Khalti" }[method];
-    toast.show(`Order placed via ${methodLabel}!`);
-  };
+
 // ── Custom Delete Confirm Modal ────────────────────────────────────────────────
 const DeleteConfirmModal = ({ itemTitle, onCancel, onConfirm }) => (
   <div style={{
@@ -291,11 +287,98 @@ export default function CartPage() {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastState(s => ({ ...s, visible: false })), 2800);
   }, []);
-  const handleConfirmPurchase = (method) => {
-    setShowCheckout(false);
-    const methodLabel = { cod: "Cash on Delivery", esewa: "eSewa", khalti: "Khalti" }[method];
-    showToast(`Order placed via ${methodLabel}!`);
-    };
+const handleConfirmPurchase = async (method) => {
+  const artworkIds = availableItems.map(i => i.artwork_id);
+
+  // ── COD ──
+  if (method === "cod") {
+    try {
+      const res = await fetch("http://localhost:8000/api/payment/cod/", {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ artwork_ids: artworkIds }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowCheckout(false);
+        setItems([]);
+        showToast("Order placed! Pay on delivery.");
+      } else {
+        showToast(data.error || "Order failed.");
+      }
+    } catch {
+      showToast("Network error. Try again.");
+    }
+    return;
+  }
+
+  // ── Khalti ──
+  if (method === "khalti") {
+    try {
+      const res = await fetch("http://localhost:8000/api/payment/khalti/initiate/", {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ artwork_ids: artworkIds }),
+      });
+      const data = await res.json();
+      if (data.success && data.payment_url) {
+        window.location.href = data.payment_url; // redirect to Khalti
+      } else {
+        showToast("Khalti initiation failed.");
+      }
+    } catch {
+      showToast("Network error. Try again.");
+    }
+    return;
+  }
+
+  // ── eSewa ──
+  if (method === "esewa") {
+    try {
+      const res = await fetch("http://localhost:8000/api/payment/esewa/initiate/", {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ artwork_ids: artworkIds }),
+      });
+      const data = await res.json();
+
+      // eSewa needs a form POST — create and submit it dynamically
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.payment_url;
+
+      const fields = [
+        "amount", "tax_amount", "service_charge", "delivery_charge",
+        "total_amount", "transaction_uuid", "product_code",
+        "product_service_charge", "product_delivery_charge",
+        "success_url", "failure_url", "signed_field_names", "signature"
+      ];
+
+      fields.forEach(key => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = data[key];
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch {
+      showToast("Network error. Try again.");
+    }
+    return;
+  }
+};
   // ── Fetch cart ──
   const fetchCart = useCallback(async () => {
     if (!isLoggedIn) { setLoading(false); return; }

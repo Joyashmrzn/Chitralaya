@@ -30,7 +30,7 @@ INSTALLED_APPS = [
     # Local apps
     'artworks',
     'accounts',
-    'orders',
+    'payment',
     'purchase',
 ]
 
@@ -132,3 +132,14 @@ CORS_ALLOW_CREDENTIALS = True
 
 # ── Default primary key ───────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# eSewa sandbox credentials
+ESEWA_SECRET_KEY = "8gBm/:&EnhH.1/q"  # official sandbox secret
+ESEWA_PRODUCT_CODE = "EPAYTEST"        # sandbox product code
+ESEWA_PAYMENT_URL = "https://rc-epay.esewa.com.np/api/epay/main/v2/form"
+ESEWA_VERIFY_URL = "https://rc-epay.esewa.com.np/api/epay/transaction/status/"
+
+# Khalti sandbox credentials
+KHALTI_SECRET_KEY = "test_secret_key_dc74e0fd11ba4b1492b0ad95e6d61f22" # sandbox key
+KHALTI_VERIFY_URL = "https://a.khalti.com/api/v2/epayment/lookup/"
+KHALTI_INITIATE_URL = "https://a.khalti.com/api/v2/epayment/initiate/"
