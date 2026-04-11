@@ -2,12 +2,30 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import CartItem
+from .models import CartItem, Purchase
 from .serializers import CartItemSerializer
 from artworks.models import Artwork
 
 def serialize(items, request, many=True):
     return CartItemSerializer(items, many=many, context={"request": request}).data
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_purchases(request):
+    purchases = Purchase.objects.filter(user=request.user).select_related("artwork").order_by("-created_at")
+    data = [
+        {
+            "id":             p.id,
+            "artwork_title":  p.artwork.title,
+            "artwork_image":  request.build_absolute_uri(p.artwork.image.url) if p.artwork.image else None,
+            "total_price":    str(p.total_price),
+            "payment_method": p.payment_method,
+            "status":         p.status,
+            "created_at":     p.created_at,
+        }
+        for p in purchases
+    ]
+    return Response(data)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -61,3 +79,6 @@ def remove_cart_item(request, item_id):
         return Response({"error": "Not found"}, status=404)
     item.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+

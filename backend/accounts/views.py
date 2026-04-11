@@ -2,7 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.authtoken.models import Token
-
+from django.db.models import Count
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 from .models import User
 
@@ -77,3 +79,68 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_customers(request):
+    """GET /api/accounts/users/ — admin only"""
+    if not request.user.is_staff and request.user.role != 'admin':
+        from rest_framework.response import Response
+        return Response({'error': 'Forbidden'}, status=403)
+ 
+    users = (
+        User.objects
+        .filter(is_staff=False, role='customer')
+        .annotate(orders_count=Count('orders'))
+        .order_by('-created_at')
+    )
+    data = [
+        {
+            'id':           u.id,
+            'full_name':    u.full_name,
+            'email':        u.email,
+            'is_active':    u.is_active,
+            'orders_count': u.orders_count,
+            'created_at':   u.created_at,
+        }
+        for u in users
+    ]
+    from rest_framework.response import Response
+    return Response(data)
+ 
+ 
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_customer_active(request, pk):
+    """PATCH /api/accounts/users/<pk>/toggle-active/"""
+    if not request.user.is_staff and request.user.role != 'admin':
+        from rest_framework.response import Response
+        return Response({'error': 'Forbidden'}, status=403)
+    try:
+        user = User.objects.get(pk=pk, is_staff=False, role='customer')
+    except User.DoesNotExist:
+        from rest_framework.response import Response
+        return Response({'error': 'Not found'}, status=404)
+ 
+    user.is_active = not user.is_active
+    user.save(update_fields=['is_active'])
+    from rest_framework.response import Response
+    return Response({'id': user.id, 'is_active': user.is_active})
+ 
+ 
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_customer(request, pk):
+    """DELETE /api/accounts/users/<pk>/"""
+    if not request.user.is_staff and request.user.role != 'admin':
+        from rest_framework.response import Response
+        return Response({'error': 'Forbidden'}, status=403)
+    try:
+        user = User.objects.get(pk=pk, is_staff=False, role='customer')
+    except User.DoesNotExist:
+        from rest_framework.response import Response
+        return Response({'error': 'Not found'}, status=404)
+ 
+    user.delete()
+    from rest_framework.response import Response
+    return Response(status=204)

@@ -7,4 +7,5 @@ urlpatterns = [
     path('khalti/initiate/', views.initiate_khalti,  name='khalti-initiate'),
     path('khalti/verify/',   views.verify_khalti,    name='khalti-verify'),
     path('cod/',             views.place_cod_order,  name='cod-order'),
+    path("my-purchases/", views.my_purchases, name="my-purchases"),
 ]

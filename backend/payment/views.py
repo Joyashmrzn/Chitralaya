@@ -283,3 +283,26 @@ def place_cod_order(request):
         "total":    str(total),
         "message":  "Order placed! Pay on delivery."
     })
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_purchases(request):
+    orders = Order.objects.filter(user=request.user).prefetch_related("items__artwork").order_by("-created_at")
+    data = []
+    for order in orders:
+        data.append({
+            "id":         order.id,       # ← changed from order_id to id
+            "status":     order.status,
+            "total":      str(order.total),
+            "created_at": order.created_at,
+            "items": [                    # ← changed from artworks to items
+                {
+                    "artwork": {          # ← nested under artwork key
+                        "title": item.artwork.title,
+                        "image": request.build_absolute_uri(item.artwork.image.url) if item.artwork.image else None,
+                    }
+                }
+                for item in order.items.all()
+            ]
+        })
+    return Response(data)
