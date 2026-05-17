@@ -6,16 +6,17 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-)og#ka_3%-(6pdji4)77t^@xgy5(ul3+ao1b$oxqc(4ncn=1cl')
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),   # Railway public URL
-    os.getenv('RAILWAY_PRIVATE_DOMAIN', ''),  # Railway internal URL
+    os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),
+    os.getenv('RAILWAY_PRIVATE_DOMAIN', ''),
 ]
-ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]  # remove empty strings
+ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 
 
 # ── Applications ──────────────────────────────────────────────────────────────
@@ -75,8 +76,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # ── Database ──────────────────────────────────────────────────────────────────
-# Reads from Railway's auto-injected environment variables.
-# Locally, put these in your .env file.
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -134,7 +133,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
 ]
 
-# Allow your deployed frontend URL (set FRONTEND_URL in Railway Variables)
 FRONTEND_URL = os.getenv('FRONTEND_URL', '')
 if FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
