@@ -21,9 +21,9 @@ export default function AdminDashboard() {
     const headers = { Authorization: `Token ${token()}` };
 
     Promise.all([
-      fetch(`${API}/artworks/`, { headers }).then(r => r.json()),
-      fetch(`${API}/artworks/categories/`, { headers }).then(r => r.json()),
-      fetch(`${API}/artworks/mediums/`, { headers }).then(r => r.json()),
+     fetch(`${API_BASE}/artworks/`, { headers }).then(r => r.json()),
+     fetch(`${API_BASE}/artworks/categories/`, { headers }).then(r => r.json()),
+     fetch(`${API_BASE}/artworks/mediums/`, { headers }).then(r => r.json()),
     ]).then(([artworks, categories, mediums]) => {
       const published = Array.isArray(artworks) ? artworks.filter(a => a.status === "published").length : 0;
       setStats({
