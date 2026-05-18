@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { API_BASE } from "../lib/api";
 
-const API_BASE = "http://localhost:8000/api/artworks";
+const res = await fetch(`${API_BASE}/artworks`);
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
 const Icon = ({ name, fill = false, size = 22, color, style = {} }) => (
@@ -251,7 +252,7 @@ const handleAddToCart = async () => {
     return;
   }
   try {
-    const res = await fetch("http://localhost:8000/api/purchase/cart/add/", {
+    const res = await fetch(`${API_BASE}/purchase/cart/add/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -282,7 +283,7 @@ const handleConfirmPurchase = async (method) => {
   // ── COD ──
   if (method === "cod") {
     try {
-      const res = await fetch("http://localhost:8000/api/payment/cod/", {
+      const res = await fetch(`${API_BASE}/payment/cod/`, {
         method: "POST",
         headers: {
           "Authorization": `Token ${token}`,
@@ -306,7 +307,7 @@ const handleConfirmPurchase = async (method) => {
   // ── Khalti ──
   if (method === "khalti") {
     try {
-      const res = await fetch("http://localhost:8000/api/payment/khalti/initiate/", {
+      const res = await fetch(`${API_BASE}/payment/khalti/initiate/`,{
         method: "POST",
         headers: {
           "Authorization": `Token ${token}`,
@@ -329,7 +330,7 @@ const handleConfirmPurchase = async (method) => {
 // ── eSewa ──
 if (method === "esewa") {
   try {
-    const res = await fetch("http://localhost:8000/api/payment/esewa/initiate/", {
+    const res = await fetch(`${API_BASE}/payment/esewa/initiate/`, {
       method: "POST",
       headers: {
         "Authorization": `Token ${token}`,

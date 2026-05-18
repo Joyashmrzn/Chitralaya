@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "./AdminLayout";
+import { API_BASE } from "../lib/api";
 
-const API = "http://127.0.0.1:8000/api";
 const token = () => localStorage.getItem("token");
 
 const StatCard = ({ label, value, sub, color = "amber" }) => (
