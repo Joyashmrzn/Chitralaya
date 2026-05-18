@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import './HomePage.css';
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-import { API_BASE } from "../lib/api";
+import { API_BASE } from "../../lib/api";
 const res = await fetch(`${API_BASE}/artworks`);
 
 const PAGE_SIZE = 9;

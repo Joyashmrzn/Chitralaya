@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminLayout from "./AdminLayout";
-import { API_BASE } from "../lib/api";
+import { API_BASE } from "../../lib/api";
 
 function apiFetch(path, opts = {}) {
   const token = localStorage.getItem("token");

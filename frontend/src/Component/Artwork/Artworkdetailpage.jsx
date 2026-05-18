@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { API_BASE } from "../lib/api";
+import { API_BASE } from "../../lib/api";
 
 const res = await fetch(`${API_BASE}/artworks`);
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import AdminLayout from "./AdminLayout";
-import { API_BASE } from "../lib/api";
+import { API_BASE } from "../../lib/api";
 
 const authHeader = () => ({ Authorization: `Token ${localStorage.getItem("token")}` });
 

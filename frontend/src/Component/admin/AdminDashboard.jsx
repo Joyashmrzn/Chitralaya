@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "./AdminLayout";
-import { API_BASE } from "../lib/api";
+import { API_BASE } from "../../lib/api";
 
 const token = () => localStorage.getItem("token");
 
