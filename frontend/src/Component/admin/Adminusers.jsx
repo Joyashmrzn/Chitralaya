@@ -6,7 +6,7 @@ function apiFetch(path, opts = {}) {
   const token = localStorage.getItem("token");
   return fetch(`${API_BASE}${path}`, {
     ...opts,
-    headers: {
+    headers: {  
       "Content-Type": "application/json",
       Authorization: `Token ${token}`,
       ...(opts.headers || {}),

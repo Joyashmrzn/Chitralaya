@@ -218,7 +218,7 @@ function TaxonomyModal({ title, items, endpoint, onClose, onRefresh }) {
     if (!name.trim()) return;
     setLoading(true); setError("");
     try {
-      const res = await fetch(`${API}/artworks/${endpoint}/`, {
+      const res = await fetch(`${API_BASE}/artworks/${endpoint}/`, {
         method: "POST",
         headers: { ...authHeader(), "Content-Type": "application/json" },
         body: JSON.stringify({ name, description }),
@@ -232,7 +232,7 @@ function TaxonomyModal({ title, items, endpoint, onClose, onRefresh }) {
 
   const remove = async (id) => {
     if (!window.confirm("Delete this? Artworks using it will be unlinked.")) return;
-    await fetch(`${API}/artworks/${endpoint}/${id}/`, {
+    await fetch(`${API_BASE}/artworks/${endpoint}/${id}/`, {
       method: "DELETE", headers: authHeader(),
     });
     onRefresh();
@@ -327,9 +327,9 @@ export default function AdminInventory() {
     const h = authHeader();
     try {
       const [a, c, m] = await Promise.all([
-        fetch(`${API}/artworks/`, { headers: h }).then(r => r.json()),
-        fetch(`${API}/artworks/categories/`, { headers: h }).then(r => r.json()),
-        fetch(`${API}/artworks/mediums/`,    { headers: h }).then(r => r.json()),
+        fetch(`${API_BASE}/artworks/`, { headers: h }).then(r => r.json()),
+        fetch(`${API_BASE}/artworks/categories/`, { headers: h }).then(r => r.json()),
+        fetch(`${API_BASE}/artworks/mediums/`,    { headers: h }).then(r => r.json()),
       ]);
       setArtworks(Array.isArray(a) ? a : []);
       setCategories(Array.isArray(c) ? c : []);
@@ -343,7 +343,7 @@ export default function AdminInventory() {
   // ── CRUD operations ─────────────────────────────────────────────────────────
   const createArtwork = async (fd) => {
     setSaving(true); setError("");
-    const res = await fetch(`${API}/artworks/`, {
+    const res = await fetch(`${API_BASE}/artworks/`, {
       method: "POST", headers: authHeader(), body: fd,
     });
     if (res.ok) { setAddModal(false); fetchAll(); }
@@ -356,7 +356,7 @@ export default function AdminInventory() {
 
   const updateArtwork = async (fd) => {
     setSaving(true); setError("");
-    const res = await fetch(`${API}/artworks/${editArtwork.id}/`, {
+    const res = await fetch(`${API_BASE}/artworks/${editArtwork.id}/`, {
       method: "PUT", headers: authHeader(), body: fd,
     });
     if (res.ok) { setEditArtwork(null); fetchAll(); }
@@ -369,7 +369,7 @@ export default function AdminInventory() {
 
   const deleteArtwork = async () => {
     setSaving(true);
-    await fetch(`${API}/artworks/${deleteTarget.id}/`, {
+    await fetch(`${API_BASE}/artworks/${deleteTarget.id}/`, {
       method: "DELETE", headers: authHeader(),
     });
     setDeleteTarget(null);
