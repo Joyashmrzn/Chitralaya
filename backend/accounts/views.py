@@ -1,12 +1,14 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, permissions,  generics
 from rest_framework.authtoken.models import Token
 from django.db.models import Count
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
-from .models import User
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer,ShippingAddressSerializer
+from .models import User,ShippingAddress
+from django.shortcuts import get_object_or_404
+
 
 
 class RegisterView(APIView):
@@ -144,3 +146,32 @@ def delete_customer(request, pk):
     user.delete()
     from rest_framework.response import Response
     return Response(status=204)
+
+class ShippingAddressListCreateView(generics.ListCreateAPIView):
+    serializer_class = ShippingAddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Users only see their own addresses
+        return ShippingAddress.objects.filter(user=self.request.user)
+
+
+class ShippingAddressDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ShippingAddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ShippingAddress.objects.filter(user=self.request.user)
+
+
+class SetDefaultAddressView(APIView):
+    """PATCH /shipping-addresses/<pk>/set-default/"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        address = get_object_or_404(
+            ShippingAddress, pk=pk, user=request.user
+        )
+        address.is_default = True
+        address.save()  # your model's save() handles unsetting others
+        return Response(ShippingAddressSerializer(address).data)
