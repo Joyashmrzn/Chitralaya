@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../api";
+
+const FIELDS = ["full_name","phone_number","email","province","district","city","street_address","landmark","postal_code","is_default"];
 
 const EMPTY_FORM = {
   full_name: "", phone_number: "", email: "",
@@ -8,6 +10,9 @@ const EMPTY_FORM = {
   is_default: false,
 };
 
+const cleanPayload = (form) =>
+  Object.fromEntries(FIELDS.map((k) => [k, form[k] ?? ""]));
+
 export default function ShippingAddress() {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +20,8 @@ export default function ShippingAddress() {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const editIdRef = useRef(null);
 
   const fetchAddresses = async () => {
     try {
@@ -30,8 +37,8 @@ export default function ShippingAddress() {
   useEffect(() => { fetchAddresses(); }, []);
 
   const openAdd = () => { setForm(EMPTY_FORM); setEditId(null); setShowForm(true); };
-  const openEdit = (addr) => { setForm({ ...addr }); setEditId(addr.id); setShowForm(true); };
-  const closeForm = () => { setShowForm(false); setEditId(null); };
+  const openEdit = (addr) => { setForm({ ...addr }); setEditId(addr.id); editIdRef.current = addr.id; setShowForm(true); };
+  const closeForm = () => { setShowForm(false); setEditId(null); editIdRef.current = null; };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -40,16 +47,29 @@ export default function ShippingAddress() {
 
   const handleSubmit = async () => {
     setSaving(true);
+    setError("");
     try {
-      if (editId) {
-        await api.put(`/shipping-addresses/${editId}/`, form);
+      const payload = cleanPayload(form);
+      let res;
+      const currentEditId = editIdRef.current;
+      if (currentEditId) {
+        res = await api.put(`/shipping-addresses/${currentEditId}/`, payload);
       } else {
-        await api.post("/shipping-addresses/", form);
+        res = await api.post("/shipping-addresses/", payload);
+      }
+      // DRF returns field errors on 400
+      if (res && typeof res === "object" && !res.id) {
+        const msgs = Object.entries(res)
+          .filter(([, v]) => Array.isArray(v) || typeof v === "string")
+          .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+          .join(" | ");
+        if (msgs) { setError(msgs); return; }
       }
       await fetchAddresses();
       closeForm();
     } catch (e) {
       console.error(e);
+      setError("Something went wrong. Check the console for details.");
     } finally {
       setSaving(false);
     }
@@ -62,7 +82,7 @@ export default function ShippingAddress() {
   };
 
   const handleSetDefault = async (id) => {
-    await api.patch(`/shipping-addresses/${id}/set-default/`);
+    await api.post(`/shipping-addresses/${id}/set-default/`, {});
     await fetchAddresses();
   };
 
@@ -119,27 +139,52 @@ export default function ShippingAddress() {
             </div>
 
             <div style={styles.formGrid}>
+              {/* Full Name + Phone */}
               {[
                 { label: "Full Name", name: "full_name", half: true },
-                { label: "Phone", name: "phone_number", half: true },
+                { label: "Phone (98XXXXXXXX)", name: "phone_number", half: true },
                 { label: "Email", name: "email", type: "email" },
-                { label: "Province", name: "province", half: true },
-                { label: "District", name: "district", half: true },
-                { label: "City", name: "city", half: true },
-                { label: "Postal Code", name: "postal_code", half: true },
-                { label: "Street Address", name: "street_address" },
-                { label: "Landmark (optional)", name: "landmark" },
               ].map(({ label, name, type = "text", half }) => (
                 <label key={name} style={{ ...styles.label, ...(half ? styles.half : {}) }}>
                   <span style={styles.labelText}>{label}</span>
-                  <input
-                    className="field"
-                    name={name}
-                    type={type}
-                    value={form[name]}
-                    onChange={handleChange}
-                    placeholder={label}
-                  />
+                  <input className="field" name={name} type={type}
+                    value={form[name]} onChange={handleChange} placeholder={label} />
+                </label>
+              ))}
+
+              {/* Province dropdown */}
+              <label style={{ ...styles.label, ...styles.half }}>
+                <span style={styles.labelText}>Province</span>
+                <select className="field" name="province" value={form.province} onChange={handleChange}>
+                  <option value="">Select province…</option>
+                  {["Koshi","Madhesh","Bagmati","Gandaki","Lumbini","Karnali","Sudurpashchim"].map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </label>
+
+              {/* District + City + Postal */}
+              {[
+                { label: "District", name: "district", half: true },
+                { label: "City", name: "city", half: true },
+                { label: "Postal Code (5 digits)", name: "postal_code", half: true },
+              ].map(({ label, name, half }) => (
+                <label key={name} style={{ ...styles.label, ...(half ? styles.half : {}) }}>
+                  <span style={styles.labelText}>{label}</span>
+                  <input className="field" name={name} type="text"
+                    value={form[name]} onChange={handleChange} placeholder={label} />
+                </label>
+              ))}
+
+              {/* Street + Landmark */}
+              {[
+                { label: "Street Address", name: "street_address" },
+                { label: "Landmark (optional)", name: "landmark" },
+              ].map(({ label, name }) => (
+                <label key={name} style={styles.label}>
+                  <span style={styles.labelText}>{label}</span>
+                  <input className="field" name={name} type="text"
+                    value={form[name]} onChange={handleChange} placeholder={label} />
                 </label>
               ))}
 
@@ -155,6 +200,7 @@ export default function ShippingAddress() {
               </label>
             </div>
 
+            {error && <p style={styles.errorMsg}>{error}</p>}
             <div style={styles.modalFooter}>
               <button className="btn-ghost" onClick={closeForm}>Cancel</button>
               <button className="btn-save" onClick={handleSubmit} disabled={saving}>
@@ -194,6 +240,7 @@ const styles = {
   checkRow: { display: "flex", alignItems: "center", gap: 8, width: "100%", marginTop: 4 },
   checkbox: { accentColor: "#111", width: 16, height: 16 },
   modalFooter: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20, paddingTop: 16, borderTop: "1px solid #f0f0f0" },
+  errorMsg: { fontSize: 12, color: "#c0392b", background: "#fdf0ee", border: "1px solid #f5c6c0", borderRadius: 8, padding: "8px 12px", marginTop: 12 },
 };
 
 const css = `
@@ -234,6 +281,7 @@ const css = `
     color: #111; background: #fafafa;
   }
   .field:focus { border-color: #111; background: #fff; }
+  select.field { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
 
   .btn-ghost {
     background: none; border: 1.5px solid #e0e0e0;
