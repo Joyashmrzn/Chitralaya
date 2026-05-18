@@ -62,7 +62,7 @@ export default function ShippingAddress() {
   };
 
   const handleSetDefault = async (id) => {
-    await api.post(`/shipping-addresses/${id}/set-default/`, {});
+    await api.patch(`/shipping-addresses/${id}/set-default/`);
     await fetchAddresses();
   };
 
