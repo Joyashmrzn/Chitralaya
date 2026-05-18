@@ -180,7 +180,7 @@ export default function HomePage() {
   // ── Load categories ──
   useEffect(() => {
     setCatLoading(true);
-    fetch(`${API_BASE}/categories/`)
+      fetch(`${API_BASE}/artworks/categories/`)      
       .then((r) => r.ok ? r.json() : [])
       .then(setCategories)
       .catch(() => setCategories([]))
@@ -189,7 +189,7 @@ export default function HomePage() {
 
   // ── Load mediums ──
   useEffect(() => {
-    fetch(`${API_BASE}/mediums/`)
+    fetch(`${API_BASE}/artworks/mediums/`)
       .then((r) => r.ok ? r.json() : [])
       .then(setMediums)
       .catch(() => setMediums([]));
@@ -213,7 +213,7 @@ export default function HomePage() {
 
     try {
       await new Promise((resolve) => setTimeout(resolve, 850));
-      const res  = await fetch(`${API_BASE}/?${params}`);
+      const res = await fetch(`${API_BASE}/artworks/?${params}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       if (Array.isArray(data)) {
