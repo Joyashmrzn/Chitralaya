@@ -239,3 +239,4 @@ class ArtworkDetailView(APIView):
         artwork = get_object_or_404(Artwork, pk=pk)
         artwork.delete()
         return Response(status=204)
+    
