@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { api } from "../api";
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState("verifying");
-  const token = localStorage.getItem("token");
   const hasVerified = useRef(false); // ✅ prevents double call
 
   useEffect(() => {
@@ -20,34 +20,23 @@ export default function PaymentSuccess() {
     else setStatus("success");
   }, []);
 
-  const verifyKhalti = async (pidx) => {
-    try {
-      const res = await fetch("http://localhost:8000/api/payment/khalti/verify/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pidx }),
-      });
-      const result = await res.json();
-      setStatus(result.success ? "success" : "failed");
-    } catch {
-      setStatus("failed");
-    }
-  };
+const verifyKhalti = async (pidx) => {
+  try {
+    const result = await api.post("/payment/khalti/verify/", { pidx });
+    setStatus(result.success ? "success" : "failed");
+  } catch {
+    setStatus("failed");
+  }
+};
 
-  const verifyEsewa = async (data) => {
-    try {
-      const res = await fetch(
-        `http://localhost:8000/api/payment/esewa/verify/?data=${data}`
-      );
-      const result = await res.json();
-      console.log("HTTP status:", res.status);
-      console.log("Response body:", result);
-      setStatus(result.success ? "success" : "failed");
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setStatus("failed");
-    }
-  };
+const verifyEsewa = async (data) => {
+  try {
+    const result = await api.get(`/payment/esewa/verify/?data=${data}`);
+    setStatus(result.success ? "success" : "failed");
+  } catch {
+    setStatus("failed");
+  }
+};
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif", background: "#f9f9f7", gap: 16 }}>

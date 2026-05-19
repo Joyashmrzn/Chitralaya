@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API = "http://localhost:8000/api/purchase";
+import { api } from "../api"; 
 
 const Icon = ({ name, fill = false, size = 22, color, style = {} }) => (
   <span
@@ -190,7 +189,7 @@ const PurchaseModal = ({ items, total, onClose, onConfirm }) => {
 
 // ── Cart Item Row ─────────────────────────────────────────────────────────────
 const CartItemRow = ({ item, onRemoveClick, navigate }) => {
-    const BASE = "http://localhost:8000";
+    const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
     const rawUrl = item.image_url || "";
     const imageUrl = rawUrl.startsWith("http")
     ? rawUrl
@@ -280,28 +279,23 @@ export default function CartPage() {
   const [loading,   setLoading]   = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null); // item to confirm delete
   const [toast,     setToastState] = useState({ msg: "", visible: false });
-  const toastTimer = { current: null };
+  const toastTimer = useRef(null);
 
   const showToast = useCallback((msg) => {
-    setToastState({ msg, visible: true });
-    clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastState(s => ({ ...s, visible: false })), 2800);
-  }, []);
+  setToastState({ msg, visible: true });
+  clearTimeout(toastTimer.current);
+  toastTimer.current = setTimeout(() => setToastState(s => ({ ...s, visible: false })), 2800);
+}, []);
+
+  const total = items.reduce((sum, i) => sum + parseFloat(i.price), 0);
+  const availableItems = items.filter(i => i.status !== "sold_out");
+  
 const handleConfirmPurchase = async (method) => {
   const artworkIds = availableItems.map(i => i.artwork_id);
 
-  // ── COD ──
   if (method === "cod") {
     try {
-      const res = await fetch("http://localhost:8000/api/payment/cod/", {
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ artwork_ids: artworkIds }),
-      });
-      const data = await res.json();
+      const data = await api.post("/payment/cod/", { artwork_ids: artworkIds });
       if (data.success) {
         setShowCheckout(false);
         setItems([]);
@@ -315,20 +309,11 @@ const handleConfirmPurchase = async (method) => {
     return;
   }
 
-  // ── Khalti ──
   if (method === "khalti") {
     try {
-      const res = await fetch("http://localhost:8000/api/payment/khalti/initiate/", {
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ artwork_ids: artworkIds }),
-      });
-      const data = await res.json();
+      const data = await api.post("/payment/khalti/initiate/", { artwork_ids: artworkIds });
       if (data.success && data.payment_url) {
-        window.location.href = data.payment_url; // redirect to Khalti
+        window.location.href = data.payment_url;
       } else {
         showToast("Khalti initiation failed.");
       }
@@ -338,20 +323,9 @@ const handleConfirmPurchase = async (method) => {
     return;
   }
 
-  // ── eSewa ──
   if (method === "esewa") {
     try {
-      const res = await fetch("http://localhost:8000/api/payment/esewa/initiate/", {
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ artwork_ids: artworkIds }),
-      });
-      const data = await res.json();
-
-      // eSewa needs a form POST — create and submit it dynamically
+      const data = await api.post("/payment/esewa/initiate/", { artwork_ids: artworkIds });
       const form = document.createElement("form");
       form.method = "POST";
       form.action = data.payment_url;
@@ -362,7 +336,6 @@ const handleConfirmPurchase = async (method) => {
         "product_service_charge", "product_delivery_charge",
         "success_url", "failure_url", "signed_field_names", "signature"
       ];
-
       fields.forEach(key => {
         const input = document.createElement("input");
         input.type = "hidden";
@@ -370,7 +343,6 @@ const handleConfirmPurchase = async (method) => {
         input.value = data[key];
         form.appendChild(input);
       });
-
       document.body.appendChild(form);
       form.submit();
     } catch {
@@ -380,43 +352,36 @@ const handleConfirmPurchase = async (method) => {
   }
 };
   // ── Fetch cart ──
-  const fetchCart = useCallback(async () => {
-    if (!isLoggedIn) { setLoading(false); return; }
-    setLoading(true);
-    try {
-      const res = await fetch(`${API}/cart/`, {
-        headers: { "Authorization": `Token ${token}` },
-      });
-      const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [isLoggedIn, token]);
+    const fetchCart = useCallback(async () => {
+      if (!isLoggedIn) { setLoading(false); return; }
+      setLoading(true);
+      try {
+        const data = await api.get("/purchase/cart/");
+        setItems(Array.isArray(data) ? data : []);
+      } catch {
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    }, [isLoggedIn, token]);
 
   useEffect(() => { fetchCart(); }, [fetchCart]);
 
   // ── Remove item ──
-  const handleRemoveConfirm = async () => {
-    if (!deleteTarget) return;
-    try {
-      await fetch(`${API}/cart/${deleteTarget.id}/remove/`, {
-        method: "DELETE",
-        headers: { "Authorization": `Token ${token}` },
-      });
-      setItems(prev => prev.filter(i => i.id !== deleteTarget.id));
-      showToast(`"${deleteTarget.title}" removed from cart`);
-    } catch {
-      showToast("Failed to remove item. Try again.");
-    } finally {
-      setDeleteTarget(null);
-    }
-  };
+const handleRemoveConfirm = async () => {
+  if (!deleteTarget) return;
+  try {
+    await api.delete(`/purchase/cart/${deleteTarget.id}/remove/`);
+    setItems(prev => prev.filter(i => i.id !== deleteTarget.id));
+    showToast(`"${deleteTarget.title}" removed from cart`);
+  } catch {
+    showToast("Failed to remove item. Try again.");
+  } finally {
+    setDeleteTarget(null);
+  }
+};
 
-  const total = items.reduce((sum, i) => sum + parseFloat(i.price), 0);
-  const availableItems = items.filter(i => i.status !== "sold_out");
+
 
   // ── Not logged in ──
   if (!isLoggedIn) return (
