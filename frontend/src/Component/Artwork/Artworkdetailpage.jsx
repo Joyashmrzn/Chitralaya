@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { API_BASE } from "../../lib/api";
+import { api } from "../user/api";
 
-const res = await fetch(`${API_BASE}/artworks`);
+
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
 const Icon = ({ name, fill = false, size = 22, color, style = {} }) => (
@@ -42,7 +42,7 @@ const Toast = ({ msg, visible }) => (
 function useToast() {
   const [msg, setMsg]       = useState("");
   const [visible, setVisible] = useState(false);
-  const timerRef = { current: null };
+  const timerRef = useRef(null); 
   const show = useCallback((text) => {
     setMsg(text); setVisible(true);
     clearTimeout(timerRef.current);
@@ -224,17 +224,16 @@ export default function ArtworkDetailPage() {
   useEffect(() => {
     setLoading(true);
     setArtwork(null);
-    fetch(`${API_BASE}/${id}/`)
-      .then(r => r.ok ? r.json() : Promise.reject())
+
+    api.get(`/artworks/${id}/`)
       .then(data => {
         setArtwork(data);
         setActiveImg(0);
-        // load related (same category, exclude self)
         const catParam = data.category?.id || data.category_id;
         const url = catParam
-          ? `${API_BASE}/?category=${catParam}&page_size=4`
-          : `${API_BASE}/?page_size=5`;
-        return fetch(url).then(r => r.ok ? r.json() : []);
+          ? `/artworks/?category=${catParam}&page_size=4`
+          : `/artworks/?page_size=5`;
+        return api.get(url);
       })
       .then(relData => {
         const arr = Array.isArray(relData) ? relData : relData.results ?? [];
@@ -252,15 +251,7 @@ const handleAddToCart = async () => {
     return;
   }
   try {
-    const res = await fetch(`${API_BASE}/purchase/cart/add/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Token ${token}`,
-      },
-      body: JSON.stringify({ artwork_id: artwork.id, quantity: qty }),
-    });
-    if (!res.ok) throw new Error();
+    await api.post("/purchase/cart/add/", { artwork_id: artwork.id, quantity: qty });
     toast.show(`"${artwork.title}" added to cart`);
   } catch {
     toast.show("Failed to add to cart. Try again.");
@@ -280,18 +271,9 @@ const handleAddToCart = async () => {
 const handleConfirmPurchase = async (method) => {
   const artworkIds = [artwork.id];
 
-  // ── COD ──
   if (method === "cod") {
     try {
-      const res = await fetch(`${API_BASE}/payment/cod/`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ artwork_ids: artworkIds }),
-      });
-      const data = await res.json();
+      const data = await api.post("/payment/cod/", { artwork_ids: artworkIds });
       if (data.success) {
         setShowPurchase(false);
         toast.show("Order placed! Pay on delivery.");
@@ -304,18 +286,9 @@ const handleConfirmPurchase = async (method) => {
     return;
   }
 
-  // ── Khalti ──
   if (method === "khalti") {
     try {
-      const res = await fetch(`${API_BASE}/payment/khalti/initiate/`,{
-        method: "POST",
-        headers: {
-          "Authorization": `Token ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ artwork_ids: artworkIds }),
-      });
-      const data = await res.json();
+      const data = await api.post("/payment/khalti/initiate/", { artwork_ids: artworkIds });
       if (data.success && data.payment_url) {
         window.location.href = data.payment_url;
       } else {
@@ -327,61 +300,31 @@ const handleConfirmPurchase = async (method) => {
     return;
   }
 
-// ── eSewa ──
-if (method === "esewa") {
-  try {
-    const res = await fetch(`${API_BASE}/payment/esewa/initiate/`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Token ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ artwork_ids: artworkIds }),
-    });
-    const data = await res.json();
+  if (method === "esewa") {
+    try {
+      const data = await api.post("/payment/esewa/initiate/", { artwork_ids: artworkIds });
+      if (data.error) { toast.show(data.error || "eSewa initiation failed."); return; }
 
-    if (!res.ok || data.error) {
-      toast.show(data.error || "eSewa initiation failed.");
-      return;
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.payment_url;
+      [
+        "amount","tax_amount","service_charge","delivery_charge",
+        "total_amount","transaction_uuid","product_code",
+        "product_service_charge","product_delivery_charge",
+        "success_url","failure_url","signed_field_names","signature"
+      ].forEach(key => {
+        const input = document.createElement("input");
+        input.type = "hidden"; input.name = key; input.value = data[key];
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch {
+      toast.show("Network error. Try again.");
     }
-
-    // eSewa requires a form POST — build and submit it dynamically
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = data.payment_url;
-
-    const fields = [
-      ["amount",                  data.amount],
-      ["tax_amount",              data.tax_amount],
-      ["service_charge",          data.service_charge],
-      ["delivery_charge",         data.delivery_charge],
-      ["total_amount",            data.total_amount],
-      ["transaction_uuid",        data.transaction_uuid],
-      ["product_code",            data.product_code],
-      ["product_service_charge",  data.product_service_charge],
-      ["product_delivery_charge", data.product_delivery_charge],
-      ["success_url",             data.success_url],
-      ["failure_url",             data.failure_url],
-      ["signed_field_names",      data.signed_field_names],
-      ["signature",               data.signature],
-    ];
-
-    fields.forEach(([name, value]) => {
-      const input = document.createElement("input");
-      input.type  = "hidden";
-      input.name  = name;
-      input.value = value;
-      form.appendChild(input);
-    });
-
-    document.body.appendChild(form);
-    form.submit();
-
-  } catch {
-    toast.show("Network error. Try again.");
+    return;
   }
-  return;
-}
 };
 
   // ── Images ──
