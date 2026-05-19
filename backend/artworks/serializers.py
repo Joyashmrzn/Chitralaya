@@ -61,9 +61,15 @@ class ArtworkListSerializer(serializers.ModelSerializer):
         ]
 
     def get_image_url(self, obj):
-        if obj.image:
-            return obj.image.url  
-        return None
+        if not obj.image:
+            return None
+        url = obj.image.url
+    
+        if url.startswith("http"):
+            return url
+    
+        request = self.context.get('request')
+        return request.build_absolute_uri(url) if request else url
 
 
 class ArtworkDetailSerializer(serializers.ModelSerializer):
@@ -85,6 +91,12 @@ class ArtworkDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ["slug", "created_at", "updated_at"]
 
     def get_image_url(self, obj):
-        if obj.image:
-            return obj.image.url 
-        return None
+        if not obj.image:
+            return None
+        url = obj.image.url
+    
+        if url.startswith("http"):
+            return url
+    
+        request = self.context.get('request')
+        return request.build_absolute_uri(url) if request else url

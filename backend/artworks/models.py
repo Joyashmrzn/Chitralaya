@@ -1,5 +1,5 @@
 from django.db import models
-
+from cloudinary.models import CloudinaryField
 
 class Category(models.Model):
     """
@@ -80,20 +80,20 @@ class Artwork(models.Model):
     )
 
     # ── Physical Details ──────────────────────────────────────────────────────
-    width       = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
-    height      = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
-    unit        = models.CharField(max_length=2, choices=UNIT_CHOICES, default="cm")
+    width  = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    height = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    unit   = models.CharField(max_length=2, choices=UNIT_CHOICES, default="cm")
     year_created = models.PositiveIntegerField(null=True, blank=True)
 
     # ── Pricing & Stock ───────────────────────────────────────────────────────
     price       = models.DecimalField(max_digits=10, decimal_places=2)
-    stock       = models.PositiveIntegerField(default=1)
+    stock = models.PositiveIntegerField(default=1)
 
     # ── Media ─────────────────────────────────────────────────────────────────
-    image       = models.ImageField(upload_to="artworks/", null=True, blank=True)
+    image = CloudinaryField('image', folder='artworks/', null=True, blank=True)
 
     # ── Status ────────────────────────────────────────────────────────────────
-    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
 
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at  = models.DateTimeField(auto_now_add=True)
