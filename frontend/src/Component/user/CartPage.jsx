@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../api"; 
+import { api } from "./api"; 
 
 const Icon = ({ name, fill = false, size = 22, color, style = {} }) => (
   <span
@@ -289,7 +289,7 @@ export default function CartPage() {
 
   const total = items.reduce((sum, i) => sum + parseFloat(i.price), 0);
   const availableItems = items.filter(i => i.status !== "sold_out");
-  
+
 const handleConfirmPurchase = async (method) => {
   const artworkIds = availableItems.map(i => i.artwork_id);
 

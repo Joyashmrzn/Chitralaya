@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { api } from "../api";
+import { api } from "./api";
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();

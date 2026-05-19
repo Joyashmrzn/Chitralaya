@@ -6,7 +6,9 @@ Django==6.0.3
 django-cloudinary-storage==0.3.0
 django-cors-headers==4.9.0
 djangorestframework==3.17.1
+gunicorn==26.0.0
 idna==3.11
+packaging==26.2
 pillow==12.2.0
 psycopg==3.3.3
 psycopg-binary==3.3.3
