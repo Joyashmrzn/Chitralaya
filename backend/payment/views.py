@@ -357,3 +357,19 @@ def admin_all_orders(request):
             ]
         })
     return Response(data)
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def admin_update_order_status(request, order_id):
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=404)
+    
+    status = request.data.get("status")
+    if status not in ["pending", "completed", "failed", "cancelled"]:
+        return Response({"error": "Invalid status"}, status=400)
+    
+    order.status = status
+    order.save()
+    return Response({"success": True, "status": order.status})
