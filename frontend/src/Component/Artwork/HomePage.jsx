@@ -277,7 +277,7 @@ const applyFilters = () => {
           <ul className="nav-links">
             <li><button className="nav-btn active">Shop</button></li>
             <li><CatDropdown categories={categories} loading={catLoading} /></li>
-            <li><button className="nav-btn" >Order</button></li>
+            {/* <li><button className="nav-btn active" onClick={() => navigate("/order")}>Order</button></li> */}
             <li><button className="nav-btn">About</button></li>
             <li><button className="nav-btn">Contact</button></li>
           </ul>

@@ -8,4 +8,5 @@ urlpatterns = [
     path('khalti/verify/',   views.verify_khalti,    name='khalti-verify'),
     path('cod/',             views.place_cod_order,  name='cod-order'),
     path("my-purchases/", views.my_purchases, name="my-purchases"),
+    path("admin/orders/", views.admin_all_orders, name="admin-orders"),
 ]

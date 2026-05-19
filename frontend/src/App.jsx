@@ -11,6 +11,7 @@ import PaymentFailure from "./Component/user/PaymentFailure";
 import Dashboard from "./Component/user/dashboard";
 import "./App.css";
 import AdminUsers from "./Component/admin/Adminusers";
+import Order from "./Component/admin/Order";
 // ── Guard: only logged-in admins can access /admin/* ──────────────────────────
 function AdminRoute({ children }) {
   const user  = JSON.parse(localStorage.getItem("user") || "null");
@@ -33,6 +34,7 @@ function App() {
         <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="/admin/inventory" element={<AdminRoute><AdminInventory /></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+        <Route path="/admin/order" element={<AdminRoute><Order /></AdminRoute>} />
         {/* User */}
         <Route path="/user/dashboard" element={<Dashboard/>} />
         {/* Fallback */}
@@ -46,6 +48,8 @@ function App() {
         {/* Payment */}
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/failure" element={<PaymentFailure />} />
+        {/* Order */}
+        
       </Routes>
     </BrowserRouter>
   );

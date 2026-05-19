@@ -2,7 +2,7 @@ import hmac, hashlib, base64, json, time
 import requests
 from django.conf import settings
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from artworks.models import Artwork
 from .models import Order, OrderItem, Payment
@@ -301,6 +301,57 @@ def my_purchases(request):
                         "title": item.artwork.title,
                         "image": request.build_absolute_uri(item.artwork.image.url) if item.artwork.image else None,
                     }
+                }
+                for item in order.items.all()
+            ]
+        })
+    return Response(data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_all_orders(request):
+    orders = Order.objects.select_related(
+        "user", "shipping_address", "payment"
+    ).prefetch_related("items__artwork").order_by("-created_at")
+    
+    data = []
+    for order in orders:
+        sa = order.shipping_address
+        payment = getattr(order, "payment", None)
+        data.append({
+            "id":         order.id,
+            "status":     order.status,
+            "total":      str(order.total),
+            "created_at": order.created_at,
+            "user": {
+                "full_name": order.user.full_name,
+                "email":     order.user.email,
+            },
+            "shipping_address": {
+                "full_name":      sa.full_name       if sa else "",
+                "phone_number":   sa.phone_number    if sa else "",
+                "city":           sa.city            if sa else "",
+                "district":       sa.district        if sa else "",
+                "province":       sa.province        if sa else "",
+                "street_address": sa.street_address  if sa else "",
+                "postal_code":    sa.postal_code     if sa else "",
+            } if sa else None,
+            "payment": {
+                "method":         payment.method         if payment else "",
+                "status":         payment.status         if payment else "",
+                "transaction_id": payment.transaction_id if payment else "",
+            } if payment else None,
+            "items": [
+                {
+                    "title":       item.artwork.title,
+                    "price":       str(item.price),
+                    "quantity":    item.quantity,
+                    "image":       request.build_absolute_uri(item.artwork.image.url) if item.artwork.image else None,
+                    "dimensions":  item.artwork.dimensions_display,
+                    "orientation": item.artwork.orientation,
+                    "medium":      item.artwork.medium.name if item.artwork.medium else None,
+                    "category":    item.artwork.category.name if item.artwork.category else None,
+                    "year":        item.artwork.year_created,
                 }
                 for item in order.items.all()
             ]
