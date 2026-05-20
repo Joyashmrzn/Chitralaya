@@ -33,6 +33,11 @@ def create_order(user, artwork_ids, shipping_address=None):
         for artwork in artworks:
             OrderItem.objects.create(order=order, artwork=artwork, price=artwork.price)
         return order, total
+    
+def get_default_shipping(user):
+    from accounts.models import ShippingAddress
+    return ShippingAddress.objects.filter(user=user, is_default=True).first() \
+        or ShippingAddress.objects.filter(user=user).first()
 
 def get_or_create_shipping(user, data):
     from accounts.models import ShippingAddress
@@ -48,16 +53,15 @@ def get_or_create_shipping(user, data):
         city=data.get('city', ''),
         district=data.get('district', ''),
         province=data.get('province', ''),
-        postal_code=data.get('postal_code', '')
+        postal_code=data.get('postal_code', ''),
     )
 # ── eSewa ─────────────────────────────────────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def initiate_esewa(request):
-    artwork_ids = request.data.get('artwork_ids', [])
-    shipping_data = request.data.get('shipping_address', {})  
-    shipping_address = get_or_create_shipping(request.user, shipping_data) 
+    artwork_ids = request.data.get('artwork_ids', []) 
+    shipping_address = get_default_shipping(request.user) 
     if not artwork_ids:
         return Response({"error": "artwork_ids is required."}, status=400)
     try:
@@ -174,13 +178,12 @@ def verify_esewa(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def initiate_khalti(request):
-    artwork_ids = request.data.get('artwork_ids', [])
-    shipping_data = request.data.get('shipping_address', {})  
-    shipping_address = get_or_create_shipping(request.user, shipping_data)  
+    artwork_ids = request.data.get('artwork_ids', []) 
+    shipping_address = get_default_shipping(request.user) 
     if not artwork_ids:
         return Response({"error": "artwork_ids is required."}, status=400)
     try:
-        order, total = create_order(request.user, artwork_ids, shipping_address) 
+        order, total = create_order(request.user, artwork_ids, shipping_address)   
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
 
@@ -265,13 +268,12 @@ def verify_khalti(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def place_cod_order(request):
-    artwork_ids = request.data.get('artwork_ids', [])
-    shipping_data = request.data.get('shipping_address', {})  # ← add
-    shipping_address = get_or_create_shipping(request.user, shipping_data)  # ← add
+    artwork_ids = request.data.get('artwork_ids', []) 
+    shipping_address = get_default_shipping(request.user) 
     if not artwork_ids:
         return Response({"error": "artwork_ids is required."}, status=400)
     try:
-        order, total = create_order(request.user, artwork_ids, shipping_address)  # ← pass it
+        order, total = create_order(request.user, artwork_ids, shipping_address)  
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
 
@@ -382,3 +384,4 @@ def admin_update_order_status(request, order_id):
     order.status = status
     order.save()
     return Response({"success": True, "status": order.status})
+

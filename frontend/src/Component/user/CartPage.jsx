@@ -320,7 +320,7 @@ export default function CartPage() {
 
 const handleConfirmPurchase = async (method, shippingAddress) => {
   const artworkIds = availableItems.map(i => i.artwork_id);
-  const payload = { artwork_ids: artworkIds, shipping_address: shippingAddress };
+  const payload = { artwork_ids: artworkIds, };
 
   if (method === "cod") {
     try {
