@@ -48,7 +48,7 @@ def get_or_create_shipping(user, data):
         city=data.get('city', ''),
         district=data.get('district', ''),
         province=data.get('province', ''),
-        postal_code=data.get('postal_code', ''),
+        postal_code=data.get('postal_code', '')
     )
 # ── eSewa ─────────────────────────────────────────────────────────────────────
 
