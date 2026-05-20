@@ -23,7 +23,11 @@ export default function PaymentSuccess() {
 const verifyKhalti = async (pidx) => {
   try {
     const result = await api.post("/payment/khalti/verify/", { pidx });
-    setStatus(result.success ? "success" : "failed");
+    if (result.success) {
+      navigate(`/order/receipt/${result.order_id}`);  
+    } else {
+      setStatus("failed");
+    }
   } catch {
     setStatus("failed");
   }
@@ -32,7 +36,11 @@ const verifyKhalti = async (pidx) => {
 const verifyEsewa = async (data) => {
   try {
     const result = await api.get(`/payment/esewa/verify/?data=${data}`);
-    setStatus(result.success ? "success" : "failed");
+    if (result.success) {
+      navigate(`/order/receipt/${result.order_id}`);  
+    } else {
+      setStatus("failed");
+    }
   } catch {
     setStatus("failed");
   }

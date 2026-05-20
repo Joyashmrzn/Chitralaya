@@ -276,6 +276,7 @@ const handleConfirmPurchase = async (method) => {
       const data = await api.post("/payment/cod/", { artwork_ids: artworkIds });
       if (data.success) {
         setShowPurchase(false);
+        navigate(`/order/receipt/${data.order_id}`);
         toast.show("Order placed! Pay on delivery.");
       } else {
         toast.show(data.error || "Order failed.");

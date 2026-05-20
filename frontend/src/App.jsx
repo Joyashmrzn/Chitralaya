@@ -12,6 +12,7 @@ import Dashboard from "./Component/user/dashboard";
 import "./App.css";
 import AdminUsers from "./Component/admin/Adminusers";
 import Order from "./Component/admin/Order";
+import OrderReceipt from "./Component/user/OrderReceipt";
 // ── Guard: only logged-in admins can access /admin/* ──────────────────────────
 function AdminRoute({ children }) {
   const user  = JSON.parse(localStorage.getItem("user") || "null");
@@ -49,7 +50,7 @@ function App() {
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/failure" element={<PaymentFailure />} />
         {/* Order */}
-        
+        <Route path="/order/receipt/:orderId" element={<OrderReceipt />} />
       </Routes>
     </BrowserRouter>
   );

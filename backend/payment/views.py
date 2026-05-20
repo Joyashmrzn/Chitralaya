@@ -385,3 +385,50 @@ def admin_update_order_status(request, order_id):
     order.save()
     return Response({"success": True, "status": order.status})
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def order_detail(request, order_id):
+    try:
+        order = Order.objects.select_related(
+            "user", "shipping_address", "payment"
+        ).prefetch_related("items__artwork").get(id=order_id, user=request.user)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=404)
+    
+    sa = order.shipping_address
+    payment = getattr(order, "payment", None)
+    return Response({
+        "id": order.id,
+        "status": order.status,
+        "total": str(order.total),
+        "created_at": order.created_at,
+        "user": {
+            "full_name": order.user.full_name,
+            "email": order.user.email,
+        },
+        "shipping_address": {
+            "full_name": sa.full_name,
+            "phone_number": sa.phone_number,
+            "email": sa.email,
+            "street_address": sa.street_address,
+            "landmark": sa.landmark if sa.landmark else "",
+            "city": sa.city,
+            "district": sa.district,
+            "province": sa.province,
+            "postal_code": sa.postal_code,
+        } if sa else None,
+        "payment": {
+            "method": payment.method if payment else "",
+            "status": payment.status if payment else "",
+            "transaction_id": payment.transaction_id if payment else "",
+        } if payment else None,
+        "items": [
+            {
+                "title": item.artwork.title,
+                "price": str(item.price),
+                "quantity": item.quantity,
+                "image": item.artwork.image.url.replace("http://", "https://") if item.artwork.image else None,
+            }
+            for item in order.items.all()
+        ]
+    })

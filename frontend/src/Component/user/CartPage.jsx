@@ -260,6 +260,7 @@ const handleConfirmPurchase = async (method, shippingAddress) => {
       if (data.success) {
         setShowCheckout(false);
         setItems([]);
+        navigate(`/order/receipt/${data.order_id}`);
         showToast("Order placed! Pay on delivery.");
       } else {
         showToast(data.error || "Order failed.");
