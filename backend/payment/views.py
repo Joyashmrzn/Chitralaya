@@ -17,46 +17,51 @@ def esewa_signature(message: str) -> str:
     ).decode()
 
 
-def create_order(user, artwork_ids):
+def create_order(user, artwork_ids, shipping_address=None):
     with transaction.atomic():
         artworks = Artwork.objects.select_for_update().filter(
-            id__in=artwork_ids,
-            status='published',
-            stock__gt=0
+            id__in=artwork_ids, status='published', stock__gt=0
         )
-
         if not artworks.exists():
             raise ValueError("No valid available artworks found.")
-
         if artworks.count() != len(artwork_ids):
             found_ids = set(artworks.values_list('id', flat=True))
-            missing   = set(int(i) for i in artwork_ids) - found_ids
+            missing = set(int(i) for i in artwork_ids) - found_ids
             raise ValueError(f"Artworks not available: {missing}")
-
         total = sum(a.price for a in artworks)
-        order = Order.objects.create(user=user, total=total)
-
+        order = Order.objects.create(user=user, total=total, shipping_address=shipping_address)
         for artwork in artworks:
-            OrderItem.objects.create(
-                order=order,
-                artwork=artwork,
-                price=artwork.price
-            )
-
+            OrderItem.objects.create(order=order, artwork=artwork, price=artwork.price)
         return order, total
 
-
+def get_or_create_shipping(user, data):
+    from accounts.models import ShippingAddress
+    if not data:
+        return None
+    return ShippingAddress.objects.create(
+        user=user,
+        full_name=data.get('full_name', ''),
+        phone_number=data.get('phone_number', ''),
+        email=data.get('email', ''),
+        street_address=data.get('street_address', ''),
+        landmark=data.get('landmark', ''),
+        city=data.get('city', ''),
+        district=data.get('district', ''),
+        province=data.get('province', ''),
+        postal_code=data.get('postal_code', ''),
+    )
 # ── eSewa ─────────────────────────────────────────────────────────────────────
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def initiate_esewa(request):
     artwork_ids = request.data.get('artwork_ids', [])
+    shipping_data = request.data.get('shipping_address', {})  
+    shipping_address = get_or_create_shipping(request.user, shipping_data) 
     if not artwork_ids:
         return Response({"error": "artwork_ids is required."}, status=400)
-
     try:
-        order, total = create_order(request.user, artwork_ids)
+        order, total = create_order(request.user, artwork_ids, shipping_address)  
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
 
@@ -170,11 +175,12 @@ def verify_esewa(request):
 @permission_classes([IsAuthenticated])
 def initiate_khalti(request):
     artwork_ids = request.data.get('artwork_ids', [])
+    shipping_data = request.data.get('shipping_address', {})  
+    shipping_address = get_or_create_shipping(request.user, shipping_data)  
     if not artwork_ids:
         return Response({"error": "artwork_ids is required."}, status=400)
-
     try:
-        order, total = create_order(request.user, artwork_ids)
+        order, total = create_order(request.user, artwork_ids, shipping_address) 
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
 
@@ -260,11 +266,12 @@ def verify_khalti(request):
 @permission_classes([IsAuthenticated])
 def place_cod_order(request):
     artwork_ids = request.data.get('artwork_ids', [])
+    shipping_data = request.data.get('shipping_address', {})  # ← add
+    shipping_address = get_or_create_shipping(request.user, shipping_data)  # ← add
     if not artwork_ids:
         return Response({"error": "artwork_ids is required."}, status=400)
-
     try:
-        order, total = create_order(request.user, artwork_ids)
+        order, total = create_order(request.user, artwork_ids, shipping_address)  # ← pass it
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
 

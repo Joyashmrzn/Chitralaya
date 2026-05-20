@@ -69,8 +69,31 @@ const Toast = ({ msg, visible }) => (
     opacity: visible ? 1 : 0, transition: "all 0.3s", pointerEvents: "none",
   }}>{msg}</div>
 );
+
 const PurchaseModal = ({ items, total, onClose, onConfirm }) => {
+  const [step, setStep] = useState(1); // 1 = address, 2 = payment
   const [method, setMethod] = useState("");
+  const [addr, setAddr] = useState({
+    full_name: "", phone_number: "", email: "",
+    street_address: "", landmark: "",
+    city: "", district: "", province: "", postal_code: "",
+  });
+
+  const addrFields = [
+    { key: "full_name",      label: "Full Name",      type: "text" },
+    { key: "phone_number",   label: "Phone Number",   type: "text" },
+    { key: "email",          label: "Email",          type: "email" },
+    { key: "street_address", label: "Street Address", type: "text" },
+    { key: "landmark",       label: "Landmark (optional)", type: "text", optional: true },
+    { key: "city",           label: "City",           type: "text" },
+    { key: "district",       label: "District",       type: "text" },
+    { key: "province",       label: "Province",       type: "text" },
+    { key: "postal_code",    label: "Postal Code",    type: "text" },
+  ];
+
+  const addrComplete = addrFields
+    .filter(f => !f.optional)
+    .every(f => addr[f.key].trim() !== "");
 
   const methods = [
     { id: "cod",    label: "Cash on Delivery", icon: "payments",               desc: "Pay when your artwork arrives" },
@@ -86,7 +109,7 @@ const PurchaseModal = ({ items, total, onClose, onConfirm }) => {
     }}>
       <div style={{
         background: "#f9f9f7", borderRadius: 12, width: "100%", maxWidth: 480,
-        border: "1px solid #d1c5b4", overflow: "hidden",
+        border: "1px solid #d1c5b4", overflow: "hidden", maxHeight: "90vh", overflowY: "auto",
       }}>
         {/* Header */}
         <div style={{
@@ -95,10 +118,10 @@ const PurchaseModal = ({ items, total, onClose, onConfirm }) => {
         }}>
           <div>
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.5rem", fontWeight: 400 }}>
-              Complete Purchase
+              {step === 1 ? "Shipping Address" : "Payment Method"}
             </div>
             <div style={{ fontSize: "0.82rem", color: "#4e4639", marginTop: 4 }}>
-              {items.length} {items.length === 1 ? "item" : "items"} —{" "}
+              Step {step} of 2 — {items.length} {items.length === 1 ? "item" : "items"} —{" "}
               <strong style={{ color: "#775a19" }}>${total.toLocaleString()}</strong>
             </div>
           </div>
@@ -107,81 +130,86 @@ const PurchaseModal = ({ items, total, onClose, onConfirm }) => {
           </button>
         </div>
 
-        {/* Item list */}
-        <div style={{ padding: "16px 32px 0", maxHeight: 160, overflowY: "auto" }}>
-          {items.map(item => (
-            <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", padding: "6px 0", borderBottom: "1px solid #f0ede8", color: "#4e4639" }}>
-              <span style={{ flex: 1, marginRight: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
-              <span style={{ fontWeight: 500, color: "#1a1c1b", flexShrink: 0 }}>${parseFloat(item.price).toLocaleString()}</span>
+        {/* Step 1 — Shipping Address */}
+        {step === 1 && (
+          <div style={{ padding: "20px 32px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {addrFields.map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: "0.7rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4e4639", display: "block", marginBottom: 4 }}>
+                    {f.label}
+                  </label>
+                  <input
+                    type={f.type}
+                    value={addr[f.key]}
+                    onChange={e => setAddr(a => ({ ...a, [f.key]: e.target.value }))}
+                    style={{
+                      width: "100%", padding: "9px 12px",
+                      border: "1px solid #d1c5b4", borderRadius: 4,
+                      fontFamily: "'DM Sans',sans-serif", fontSize: "0.88rem",
+                      background: "#fff", boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* Payment Methods */}
-        <div style={{ padding: "20px 32px" }}>
-          <div style={{ fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "#4e4639", marginBottom: 14 }}>
-            Select Payment Method
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {methods.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMethod(m.id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 16,
-                  padding: "14px 18px", borderRadius: 6, cursor: "pointer",
-                  border: method === m.id ? "1.5px solid #775a19" : "1px solid #d1c5b4",
-                  background: method === m.id ? "rgba(119,90,25,0.05)" : "#fff",
-                  textAlign: "left", transition: "all 0.2s",
-                }}
-              >
-                <div style={{
-                  width: 40, height: 40, borderRadius: "50%",
-                  background: method === m.id ? "rgba(119,90,25,0.12)" : "#eeeeec",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                }}>
-                  <Icon name={m.icon} size={18} color={method === m.id ? "#775a19" : "#4e4639"} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "#1a1c1b" }}>{m.label}</div>
-                  <div style={{ fontSize: "0.75rem", color: "#4e4639", marginTop: 2 }}>{m.desc}</div>
-                </div>
-                {method === m.id && <Icon name="check_circle" fill size={18} color="#775a19" />}
+            <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
+              <button onClick={onClose} style={{ flex: 1, padding: "11px 0", background: "transparent", border: "1px solid #d1c5b4", borderRadius: 4, cursor: "pointer", fontSize: "0.8rem", letterSpacing: "0.07em", textTransform: "uppercase", color: "#4e4639" }}>
+                Cancel
               </button>
-            ))}
+              <button
+                disabled={!addrComplete}
+                onClick={() => setStep(2)}
+                style={{ flex: 2, padding: "11px 0", background: addrComplete ? "#775a19" : "#d1c5b4", border: "none", borderRadius: 4, cursor: addrComplete ? "pointer" : "not-allowed", fontSize: "0.8rem", letterSpacing: "0.07em", textTransform: "uppercase", color: "white" }}
+              >
+                Continue to Payment
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Footer */}
-        <div style={{ padding: "0 32px 28px", display: "flex", gap: 10 }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: "11px 0", background: "transparent",
-              border: "1px solid #d1c5b4", borderRadius: 4, cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem",
-              letterSpacing: "0.07em", textTransform: "uppercase", color: "#4e4639",
-            }}
-          >Cancel</button>
-          <button
-            disabled={!method}
-            onClick={() => onConfirm(method)}
-            style={{
-              flex: 2, padding: "11px 0",
-              background: method ? "#775a19" : "#d1c5b4",
-              border: "none", borderRadius: 4, cursor: method ? "pointer" : "not-allowed",
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem",
-              letterSpacing: "0.07em", textTransform: "uppercase", color: "white",
-              transition: "background 0.2s",
-            }}
-          >
-            {method === "cod"
-              ? "Place Order"
-              : method
-              ? `Pay with ${methods.find(m2 => m2.id === method)?.label}`
-              : "Select a Method"}
-          </button>
-        </div>
+        {/* Step 2 — Payment */}
+        {step === 2 && (
+          <>
+            <div style={{ padding: "20px 32px 0" }}>
+              <div style={{ fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "#4e4639", marginBottom: 14 }}>
+                Select Payment Method
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {methods.map((m) => (
+                  <button key={m.id} onClick={() => setMethod(m.id)} style={{
+                    display: "flex", alignItems: "center", gap: 16,
+                    padding: "14px 18px", borderRadius: 6, cursor: "pointer",
+                    border: method === m.id ? "1.5px solid #775a19" : "1px solid #d1c5b4",
+                    background: method === m.id ? "rgba(119,90,25,0.05)" : "#fff",
+                    textAlign: "left", transition: "all 0.2s",
+                  }}>
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: method === m.id ? "rgba(119,90,25,0.12)" : "#eeeeec", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon name={m.icon} size={18} color={method === m.id ? "#775a19" : "#4e4639"} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "#1a1c1b" }}>{m.label}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#4e4639", marginTop: 2 }}>{m.desc}</div>
+                    </div>
+                    {method === m.id && <Icon name="check_circle" fill size={18} color="#775a19" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ padding: "20px 32px 28px", display: "flex", gap: 10 }}>
+              <button onClick={() => setStep(1)} style={{ flex: 1, padding: "11px 0", background: "transparent", border: "1px solid #d1c5b4", borderRadius: 4, cursor: "pointer", fontSize: "0.8rem", letterSpacing: "0.07em", textTransform: "uppercase", color: "#4e4639" }}>
+                Back
+              </button>
+              <button
+                disabled={!method}
+                onClick={() => onConfirm(method, addr)}
+                style={{ flex: 2, padding: "11px 0", background: method ? "#775a19" : "#d1c5b4", border: "none", borderRadius: 4, cursor: method ? "pointer" : "not-allowed", fontSize: "0.8rem", letterSpacing: "0.07em", textTransform: "uppercase", color: "white" }}
+              >
+                {method === "cod" ? "Place Order" : method ? `Pay with ${methods.find(m2 => m2.id === method)?.label}` : "Select a Method"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -290,12 +318,13 @@ export default function CartPage() {
   const total = items.reduce((sum, i) => sum + parseFloat(i.price), 0);
   const availableItems = items.filter(i => i.status !== "sold_out");
 
-const handleConfirmPurchase = async (method) => {
+const handleConfirmPurchase = async (method, shippingAddress) => {
   const artworkIds = availableItems.map(i => i.artwork_id);
+  const payload = { artwork_ids: artworkIds, shipping_address: shippingAddress };
 
   if (method === "cod") {
     try {
-      const data = await api.post("/payment/cod/", { artwork_ids: artworkIds });
+      const data = await api.post("/payment/cod/", payload);
       if (data.success) {
         setShowCheckout(false);
         setItems([]);
@@ -311,7 +340,7 @@ const handleConfirmPurchase = async (method) => {
 
   if (method === "khalti") {
     try {
-      const data = await api.post("/payment/khalti/initiate/", { artwork_ids: artworkIds });
+      const data = await api.post("/payment/khalti/initiate/", payload);
       if (data.success && data.payment_url) {
         window.location.href = data.payment_url;
       } else {
@@ -325,16 +354,15 @@ const handleConfirmPurchase = async (method) => {
 
   if (method === "esewa") {
     try {
-      const data = await api.post("/payment/esewa/initiate/", { artwork_ids: artworkIds });
+      const data = await api.post("/payment/esewa/initiate/", payload);
       const form = document.createElement("form");
       form.method = "POST";
       form.action = data.payment_url;
-
       const fields = [
-        "amount", "tax_amount", "service_charge", "delivery_charge",
-        "total_amount", "transaction_uuid", "product_code",
-        "product_service_charge", "product_delivery_charge",
-        "success_url", "failure_url", "signed_field_names", "signature"
+        "amount","tax_amount","service_charge","delivery_charge",
+        "total_amount","transaction_uuid","product_code",
+        "product_service_charge","product_delivery_charge",
+        "success_url","failure_url","signed_field_names","signature"
       ];
       fields.forEach(key => {
         const input = document.createElement("input");
