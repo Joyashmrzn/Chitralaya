@@ -10,6 +10,22 @@ export default function OrderReceipt() {
   const printRef = useRef();
 
   useEffect(() => {
+  console.log("Token:", localStorage.getItem("token"));
+  console.log("OrderId:", orderId);
+
+  api.get(`/payment/orders/${orderId}/`)
+    .then(data => {
+      console.log("Response:", data);
+      setOrder(data);
+    })
+    .catch((err) => {
+      console.log("Error:", err);
+      navigate("/");
+    })
+    .finally(() => setLoading(false));
+}, [orderId]);
+
+  useEffect(() => {
     api.get(`/payment/orders/${orderId}/`)
       .then(setOrder)
       .catch(() => navigate("/"))
