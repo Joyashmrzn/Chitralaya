@@ -88,7 +88,7 @@ export default function OrderReceipt() {
   onClick={handleDownload}
   style={{
     padding: "10px 20px",
-    background: "#1a1c1b",
+    background: "#775a19",
     color: "white",
     border: "none",
     borderRadius: 4,
