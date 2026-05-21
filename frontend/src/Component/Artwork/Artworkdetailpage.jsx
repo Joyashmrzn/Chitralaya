@@ -206,7 +206,7 @@ export default function ArtworkDetailPage() {
   const { id }       = useParams();
   const navigate     = useNavigate();
   const toast        = useToast();
-
+  const [zoomed, setZoomed] = useState(false);
   const [artwork,  setArtwork]  = useState(null);
   const [related,  setRelated]  = useState([]);
   const [loading,  setLoading]  = useState(true);
@@ -412,7 +412,7 @@ const handleConfirmPurchase = async (method) => {
             ) : (
               <>
                 {/* Main image */}
-                <div style={{ borderRadius: 8, overflow: "hidden", background: "#eeeeec", aspectRatio: "3/4", position: "relative", cursor: "zoom-in" }}>
+                <div style={{ borderRadius: 8, overflow: "hidden", background: "#eeeeec", aspectRatio: "3/4", position: "relative", cursor: "zoom-in" }} onClick={() => setZoomed(true)}>
                   <img
                     src={images[activeImg]}
                     alt={artwork?.title}
@@ -669,6 +669,73 @@ const handleConfirmPurchase = async (method) => {
       )}
 
       <Toast msg={toast.msg} visible={toast.visible} />
+
+      {zoomed && (
+        <div
+          onClick={() => setZoomed(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 2000,
+            background: "rgba(0,0,0,0.95)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "zoom-out",
+          }}
+        >
+          <button
+            onClick={() => setZoomed(false)}
+            style={{
+              position: "absolute", top: 24, right: 24,
+              background: "rgba(255,255,255,0.1)", border: "none",
+              borderRadius: "50%", width: 44, height: 44,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", color: "white",
+            }}
+          >
+            <Icon name="close" size={22} color="white" />
+          </button>
+
+          <div style={{
+            position: "absolute", bottom: 24, left: "50%",
+            transform: "translateX(-50%)",
+            color: "rgba(255,255,255,0.7)", fontSize: "0.85rem",
+            fontFamily: "'Cormorant Garamond', serif", letterSpacing: "0.1em",
+          }}>
+            {artwork?.title}
+          </div>
+
+          <img
+            src={images[activeImg]}
+            alt={artwork?.title}
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth: "92vw", maxHeight: "92vh",
+              objectFit: "contain", borderRadius: 4,
+              boxShadow: "0 8px 48px rgba(0,0,0,0.6)",
+            }}
+          />
+
+          {images.length > 1 && (
+            <div style={{
+              position: "absolute", bottom: 60,
+              display: "flex", gap: 10,
+            }}>
+              {images.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={e => { e.stopPropagation(); setActiveImg(i); }}
+                  style={{
+                    width: 52, height: 52, borderRadius: 4, overflow: "hidden",
+                    border: activeImg === i ? "2px solid white" : "2px solid rgba(255,255,255,0.2)",
+                    padding: 0, cursor: "pointer", background: "none",
+                  }}
+                >
+                  <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }
