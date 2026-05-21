@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate,useLocation} from "react-router-dom";
+import { useEffect, useState } from "react"; 
 import HomePage from "./Component/Artwork/HomePage";
 import LoginPage from "./Component/Account/Login";
 import RegisterPage from "./Component/Account/Register";
@@ -13,6 +14,8 @@ import "./App.css";
 import AdminUsers from "./Component/admin/Adminusers";
 import Order from "./Component/admin/Order";
 import OrderReceipt from "./Component/user/OrderReceipt";
+import ReactGA from "react-ga4";
+ReactGA.initialize("G-ZW7QZP8CK6");
 // ── Guard: only logged-in admins can access /admin/* ──────────────────────────
 function AdminRoute({ children }) {
   const user  = JSON.parse(localStorage.getItem("user") || "null");
@@ -22,9 +25,18 @@ function AdminRoute({ children }) {
   return children;
 }
 
+function Analytics() {
+  const location = useLocation();
+  useEffect(() => {
+    ReactGA.send({ hitType: "pageview", page: location.pathname });
+  }, [location]);
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <Analytics /> 
       <Routes>
         {/* Public */}
         <Route path="/"         element={<HomePage />} />

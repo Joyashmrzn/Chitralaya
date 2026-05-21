@@ -37,6 +37,16 @@ const NAV = [
       </svg>
     ),
   },
+  {
+  to: "https://analytics.google.com",
+  label: "Analytics",
+  external: true,
+  icon: (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 11H7v-2h5v2zm5-4H7V8h10v2z"/>
+    </svg>
+  ),
+},
 ];
 export default function AdminLayout({ children }) {
   const location = useLocation();
@@ -68,32 +78,29 @@ export default function AdminLayout({ children }) {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 px-3 py-5 space-y-0.5">
-          {NAV.map(({ to, label, icon }) => {
-            const active = location.pathname.startsWith(to);
+       <nav className="flex-1 px-3 py-5 space-y-0.5">
+          {NAV.map(({ to, label, icon, external }) => {
+            const active = !external && location.pathname.startsWith(to);
+            const El = external ? "a" : Link;
+            const extraProps = external
+              ? { href: to, target: "_blank", rel: "noreferrer" }
+              : { to };
+
             return (
-              <Link
+              <El
                 key={to}
-                to={to}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  active ? "pl-[10px]" : ""
-                }`}
+                {...extraProps}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${active ? "pl-[10px]" : ""}`}
                 style={active
-                  ? {
-                      background: "rgba(180,100,40,0.18)",
-                      color: "#d97706",
-                      borderLeft: "2px solid #d97706",
-                    }
-                  : {
-                      color: "#c4a882",
-                    }
+                  ? { background: "rgba(180,100,40,0.18)", color: "#d97706", borderLeft: "2px solid #d97706" }
+                  : { color: "#c4a882" }
                 }
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
               >
                 {icon}
                 {label}
-              </Link>
+              </El>
             );
           })}
         </nav>
