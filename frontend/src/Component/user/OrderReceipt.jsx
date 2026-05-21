@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "./api";
+import html2pdf from "html2pdf.js";
 
 export default function OrderReceipt() {
   const { orderId } = useParams();
@@ -33,6 +34,17 @@ export default function OrderReceipt() {
   }, [orderId]);
 
   const handlePrint = () => window.print();
+  const handleDownload = () => {
+  const element = printRef.current;
+  const options = {
+    margin: 0,
+    filename: `receipt-${String(order.id).padStart(5, "0")}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: "px", format: [680, 900], orientation: "portrait" }
+  };
+  html2pdf().set(options).from(element).save();
+};
 
   if (loading) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" }}>
@@ -72,6 +84,20 @@ export default function OrderReceipt() {
         >
           🖨 Print Receipt
         </button>
+          <button
+  onClick={handleDownload}
+  style={{
+    padding: "10px 20px",
+    background: "#1a1c1b",
+    color: "white",
+    border: "none",
+    borderRadius: 4,
+    cursor: "pointer",
+    fontSize: "0.83rem"
+  }}
+>
+  ⬇ Download Receipt
+</button>
       </div>
 
       {/* Receipt card */}
