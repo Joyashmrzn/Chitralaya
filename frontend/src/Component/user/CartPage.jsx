@@ -206,7 +206,7 @@ const CartItemRow = ({ item, onRemoveClick, navigate }) => {
       {/* Price + Remove */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 16 }}>
         <div style={{ fontSize: "1.4rem", fontWeight: 300, color: "#775a19" }}>
-          ${parseFloat(item.price).toLocaleString()}
+          Rs {parseFloat(item.price).toLocaleString()}
         </div>
         <button
           onClick={() => onRemoveClick(item)}
@@ -436,7 +436,7 @@ const handleRemoveConfirm = async () => {
               {items.map(item => (
                 <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.83rem", padding: "8px 0", borderBottom: "1px solid #f0ede8" }}>
                   <span style={{ color: "#4e4639", flex: 1, marginRight: 8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</span>
-                  <span style={{ fontWeight: 500, flexShrink: 0 }}>${parseFloat(item.price).toLocaleString()}</span>
+                  <span style={{ fontWeight: 500, flexShrink: 0 }}>Rs {parseFloat(item.price).toLocaleString()}</span>
                 </div>
               ))}
 

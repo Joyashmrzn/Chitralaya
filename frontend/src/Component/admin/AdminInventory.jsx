@@ -146,7 +146,7 @@ function ArtworkForm({ initial = {}, categories = [], mediums = [], onSave, onCl
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Price (USD)">
+        <Field label="Price (Nepali Rupee)">
           <Input type="number" min="0" step="0.01" value={form.price} onChange={e => set("price", e.target.value)} placeholder="0.00" />
         </Field>
         <Field label="Stock">
@@ -539,7 +539,7 @@ export default function AdminInventory() {
                         {a.orientation || "—"}
                       </td>
                       <td className="px-5 py-4 font-semibold text-stone-800">
-                        ${Number(a.price).toLocaleString()}
+                        Rs {Number(a.price).toLocaleString()}
                       </td>
                       <td className="px-5 py-4">
                         <span className={`font-medium ${a.stock === 0 ? "text-red-500" : "text-stone-700"}`}>

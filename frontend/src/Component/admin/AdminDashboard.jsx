@@ -97,7 +97,7 @@ export default function AdminDashboard() {
                     <td className="px-6 py-4 font-medium text-stone-800">{a.title}</td>
                     <td className="px-6 py-4 text-stone-500">{a.category_name || "—"}</td>
                     <td className="px-6 py-4 text-stone-500">{a.medium_name || "—"}</td>
-                    <td className="px-6 py-4 text-stone-800">${Number(a.price).toLocaleString()}</td>
+                    <td className="px-6 py-4 text-stone-800">Rs {Number(a.price).toLocaleString()}</td>
                     <td className="px-6 py-4 text-stone-500">{a.stock}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLE[a.status] || ""}`}>

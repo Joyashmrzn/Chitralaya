@@ -186,7 +186,7 @@ const RelatedCard = ({ artwork, navigate }) => {
       </div>
       <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.2rem" }}>{artwork.title}</div>
       {artwork.artist_name && <div style={{ fontSize: "0.78rem", color: "#4e4639", fontStyle: "italic", marginTop: 4 }}>{artwork.artist_name}</div>}
-      <div style={{ fontSize: "1rem", fontWeight: 500, color: "#775a19", marginTop: 6 }}>${price}</div>
+      <div style={{ fontSize: "1rem", fontWeight: 500, color: "#775a19", marginTop: 6 }}>Rs {price}</div>
     </div>
   );
 };
@@ -477,7 +477,7 @@ const handleConfirmPurchase = async (method) => {
 
                 {/* Price */}
                 <div style={{ fontSize: "2.4rem", fontWeight: 300, color: "var(--ch-on-surface)", marginBottom: 32 }}>
-                  ${price}
+                  Rs {price}
                 </div>
 
                 {/* Specs */}
@@ -598,7 +598,7 @@ const handleConfirmPurchase = async (method) => {
                   ["Height",      artwork.height ? `${artwork.height} cm` : null],
                   ["Orientation", artwork.orientation],
                   ["Status",      artwork.status],
-                  ["Price",       `$${price}`],
+                  ["Price", `Rs. ${price}`],
                 ].filter(([, v]) => v).map(([label, val]) => (
                   <div key={label} className="spec-row">
                     <span style={{ color: "var(--ch-on-surface-variant)" }}>{label}</span>

@@ -26,12 +26,12 @@ export default function OrderReceipt() {
     .finally(() => setLoading(false));
 }, [orderId]);
 
-  useEffect(() => {
-    api.get(`/payment/orders/${orderId}/`)
-      .then(setOrder)
-      .catch(() => navigate("/"))
-      .finally(() => setLoading(false));
-  }, [orderId]);
+  // useEffect(() => {
+  //   api.get(`/payment/orders/${orderId}/`)
+  //     .then(setOrder)
+  //     .catch(() => navigate("/"))
+  //     .finally(() => setLoading(false));
+  // }, [orderId]);
 
   const handlePrint = () => window.print();
   const handleDownload = () => {
@@ -213,7 +213,7 @@ export default function OrderReceipt() {
                     )}
                   </div>
                   <div style={{ fontWeight: 600, color: "#775a19", fontSize: "0.95rem" }}>
-                    ${parseFloat(item.price).toLocaleString()}
+                    Rs {parseFloat(item.price).toLocaleString()}
                   </div>
                 </div>
               ))}
@@ -224,7 +224,7 @@ export default function OrderReceipt() {
           <div style={{ borderTop: "2px solid #1a1c1b", paddingTop: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.2rem" }}>Total Amount</span>
             <span style={{ fontSize: "1.6rem", fontWeight: 300, color: "#775a19" }}>
-              ${parseFloat(order.total).toLocaleString()}
+               Rs. {parseFloat(order.total).toLocaleString()}
             </span>
           </div>
 
