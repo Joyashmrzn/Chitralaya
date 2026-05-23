@@ -54,107 +54,267 @@ function useToast() {
 // ── Purchase Modal ────────────────────────────────────────────────────────────
 const PurchaseModal = ({ artwork, qty, onClose, onConfirm }) => {
   const [method, setMethod] = useState("");
+  const [step, setStep] = useState(1);
+  const [addrLoading, setAddrLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [addressId, setAddressId] = useState(null);
+  const [form, setForm] = useState({
+    full_name: "", phone_number: "", street_address: "",
+    landmark: "", city: "", district: "", province: "", postal_code: "",
+  });
+
   const total = (parseFloat(artwork.price) * qty).toLocaleString();
 
+  useEffect(() => {
+    api.get("/accounts/shipping-addresses/")
+      .then(data => {
+        const def = (Array.isArray(data) ? data : []).find(a => a.is_default) || data[0] || null;
+        if (def) {
+          setAddressId(def.id);
+          setForm({
+            full_name:      def.full_name || "",
+            phone_number:   def.phone_number || "",
+            street_address: def.street_address || "",
+            landmark:       def.landmark || "",
+            city:           def.city || "",
+            district:       def.district || "",
+            province:       def.province || "",
+            postal_code:    def.postal_code || "",
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setAddrLoading(false));
+  }, []);
+
+  const handleChange = (e) => {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  };
+
+  const handleConfirmAddress = async () => {
+    setSaving(true);
+    try {
+      if (addressId) {
+        await api.put(`/accounts/shipping-addresses/${addressId}/`, { ...form, is_default: true });
+      } else {
+        const res = await api.post("/accounts/shipping-addresses/", { ...form, is_default: true });
+        setAddressId(res.id);
+      }
+      setStep(2);
+    } catch {
+      alert("Failed to save address. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const methods = [
-    { id: "cod",    label: "Cash on Delivery", icon: "payments",          desc: "Pay when your artwork arrives" },
+    { id: "cod",    label: "Cash on Delivery", icon: "payments",               desc: "Pay when your artwork arrives" },
     { id: "esewa",  label: "eSewa",             icon: "account_balance_wallet", desc: "Nepal's leading digital wallet" },
     { id: "khalti", label: "Khalti",            icon: "account_balance_wallet", desc: "Fast & secure mobile payment" },
   ];
+
+  const inputStyle = {
+    width: "100%", padding: "9px 12px", borderRadius: 6,
+    border: "1px solid #d1c5b4", background: "#fff",
+    fontFamily: "'DM Sans',sans-serif", fontSize: "0.83rem",
+    color: "#1a1c1b", outline: "none", boxSizing: "border-box",
+  };
+
+  const labelStyle = {
+    fontSize: "0.65rem", letterSpacing: "0.12em",
+    textTransform: "uppercase", color: "#7f7667",
+    display: "block", marginBottom: 5,
+  };
+
+  const isAddressValid = form.full_name && form.phone_number && form.street_address && form.city;
 
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 1000,
       background: "rgba(26,28,27,0.5)", backdropFilter: "blur(6px)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 24,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
     }}>
       <div style={{
         background: "#f9f9f7", borderRadius: 12, width: "100%", maxWidth: 480,
         border: "1px solid #d1c5b4", overflow: "hidden",
+        maxHeight: "90vh", overflowY: "auto",
       }}>
+
         {/* Header */}
-        <div style={{
-          padding: "28px 32px 20px", borderBottom: "1px solid #d1c5b4",
-          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-        }}>
+        <div style={{ padding: "24px 32px 20px", borderBottom: "1px solid #d1c5b4", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.5rem", fontWeight: 400 }}>
-              Complete Purchase
+              {step === 1 ? "Confirm Delivery Address" : "Select Payment Method"}
             </div>
             <div style={{ fontSize: "0.82rem", color: "#4e4639", marginTop: 4 }}>
-              {artwork.title} × {qty} — <strong style={{ color: "#775a19" }}>${total}</strong>
+              {artwork.title} × {qty} — <strong style={{ color: "#775a19" }}>Rs. {total}</strong>
             </div>
           </div>
-          <button onClick={onClose} style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "#4e4639", padding: 4,
-          }}>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#4e4639", padding: 4 }}>
             <Icon name="close" size={20} />
           </button>
         </div>
 
-        {/* Payment Methods */}
-        <div style={{ padding: "24px 32px" }}>
-          <div style={{ fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "#4e4639", marginBottom: 16 }}>
-            Select Payment Method
+        {/* Step indicators */}
+        <div style={{ display: "flex", padding: "14px 32px", gap: 8, borderBottom: "1px solid #d1c5b4", alignItems: "center" }}>
+          {["Address", "Payment"].map((label, i) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: "50%", fontSize: "0.7rem",
+                display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600,
+                background: step > i + 1 ? "#775a19" : step === i + 1 ? "#775a19" : "#e8e8e6",
+                color: step >= i + 1 ? "white" : "#7f7667",
+              }}>
+                {step > i + 1 ? "✓" : i + 1}
+              </div>
+              <span style={{ fontSize: "0.78rem", color: step === i + 1 ? "#1a1c1b" : "#7f7667", fontWeight: step === i + 1 ? 500 : 400 }}>
+                {label}
+              </span>
+              {i === 0 && <div style={{ width: 24, height: 1, background: "#d1c5b4", margin: "0 4px" }} />}
+            </div>
+          ))}
+        </div>
+
+        {/* STEP 1 — Address Form */}
+        {step === 1 && (
+          <div style={{ padding: "24px 32px" }}>
+            {addrLoading ? (
+              <div style={{ fontSize: "0.85rem", color: "#7f7667", textAlign: "center", padding: "20px 0" }}>
+                Loading address…
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Full Name</label>
+                    <input name="full_name" value={form.full_name} onChange={handleChange} style={inputStyle} placeholder="Full Name" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Phone</label>
+                    <input name="phone_number" value={form.phone_number} onChange={handleChange} style={inputStyle} placeholder="98XXXXXXXX" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Street Address</label>
+                  <input name="street_address" value={form.street_address} onChange={handleChange} style={inputStyle} placeholder="Street Address" />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Landmark (optional)</label>
+                  <input name="landmark" value={form.landmark} onChange={handleChange} style={inputStyle} placeholder="Landmark" />
+                </div>
+
+                <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>City</label>
+                    <input name="city" value={form.city} onChange={handleChange} style={inputStyle} placeholder="City" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>District</label>
+                    <input name="district" value={form.district} onChange={handleChange} style={inputStyle} placeholder="District" />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Province</label>
+                    <select name="province" value={form.province} onChange={handleChange} style={inputStyle}>
+                      <option value="">Select…</option>
+                      {["Koshi","Madhesh","Bagmati","Gandaki","Lumbini","Karnali","Sudurpashchim"].map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={labelStyle}>Postal Code</label>
+                    <input name="postal_code" value={form.postal_code} onChange={handleChange} style={inputStyle} placeholder="44600" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {methods.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMethod(m.id)}
-                style={{
+        )}
+
+        {/* STEP 2 — Payment */}
+        {step === 2 && (
+          <div style={{ padding: "20px 32px" }}>
+            {/* Address summary */}
+            <div style={{ background: "white", border: "1px solid #e8e8e6", borderRadius: 8, padding: "12px 16px", marginBottom: 20, fontSize: "0.82rem", color: "#4e4639", lineHeight: 1.7 }}>
+              <div style={{ fontWeight: 600, color: "#1a1c1b", marginBottom: 2 }}>{form.full_name} · {form.phone_number}</div>
+              <div>{form.street_address}{form.landmark ? `, ${form.landmark}` : ""}</div>
+              <div>{form.city}, {form.district}, {form.province} {form.postal_code}</div>
+            </div>
+
+            <div style={{ fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "#4e4639", marginBottom: 14 }}>
+              Payment Method
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {methods.map((m) => (
+                <button key={m.id} onClick={() => setMethod(m.id)} style={{
                   display: "flex", alignItems: "center", gap: 16,
                   padding: "14px 18px", borderRadius: 6, cursor: "pointer",
                   border: method === m.id ? "1.5px solid #775a19" : "1px solid #d1c5b4",
                   background: method === m.id ? "rgba(119,90,25,0.05)" : "#fff",
                   textAlign: "left", transition: "all 0.2s",
-                }}
-              >
-                <div style={{
-                  width: 40, height: 40, borderRadius: "50%",
-                  background: method === m.id ? "rgba(119,90,25,0.12)" : "#eeeeec",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
-                  <Icon name={m.icon} size={18} color={method === m.id ? "#775a19" : "#4e4639"} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "#1a1c1b" }}>{m.label}</div>
-                  <div style={{ fontSize: "0.75rem", color: "#4e4639", marginTop: 2 }}>{m.desc}</div>
-                </div>
-                {method === m.id && <Icon name="check_circle" fill size={18} color="#775a19" />}
-              </button>
-            ))}
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: method === m.id ? "rgba(119,90,25,0.12)" : "#eeeeec", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name={m.icon} size={18} color={method === m.id ? "#775a19" : "#4e4639"} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 500, fontSize: "0.9rem", color: "#1a1c1b" }}>{m.label}</div>
+                    <div style={{ fontSize: "0.75rem", color: "#4e4639", marginTop: 2 }}>{m.desc}</div>
+                  </div>
+                  {method === m.id && <Icon name="check_circle" fill size={18} color="#775a19" />}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Footer */}
         <div style={{ padding: "0 32px 28px", display: "flex", gap: 10 }}>
           <button
-            onClick={onClose}
-            style={{
-              flex: 1, padding: "11px 0", background: "transparent",
-              border: "1px solid #d1c5b4", borderRadius: 4, cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem",
-              letterSpacing: "0.07em", textTransform: "uppercase", color: "#4e4639",
-            }}
-          >Cancel</button>
-          <button
-            disabled={!method}
-            onClick={() => onConfirm(method)}
-            style={{
-              flex: 2, padding: "11px 0",
-              background: method ? "#775a19" : "#d1c5b4",
-              border: "none", borderRadius: 4, cursor: method ? "pointer" : "not-allowed",
-              fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem",
-              letterSpacing: "0.07em", textTransform: "uppercase", color: "white",
-              transition: "background 0.2s",
-            }}
+            onClick={step === 1 ? onClose : () => setStep(1)}
+            style={{ flex: 1, padding: "11px 0", background: "transparent", border: "1px solid #d1c5b4", borderRadius: 4, cursor: "pointer", fontSize: "0.8rem", letterSpacing: "0.07em", textTransform: "uppercase", color: "#4e4639" }}
           >
-            {method === "cod" ? "Place Order" : method ? `Pay with ${methods.find(m => m.id === method)?.label}` : "Select a Method"}
+            {step === 1 ? "Cancel" : "Back"}
           </button>
+
+          {step === 1 ? (
+            <button
+              disabled={!isAddressValid || saving}
+              onClick={handleConfirmAddress}
+              style={{
+                flex: 2, padding: "11px 0",
+                background: isAddressValid && !saving ? "#775a19" : "#d1c5b4",
+                border: "none", borderRadius: 4,
+                cursor: isAddressValid && !saving ? "pointer" : "not-allowed",
+                fontSize: "0.8rem", letterSpacing: "0.07em", textTransform: "uppercase",
+                color: "white", transition: "background 0.2s",
+              }}
+            >
+              {saving ? "Saving…" : "Confirm Address"}
+            </button>
+          ) : (
+            <button
+              disabled={!method}
+              onClick={() => onConfirm(method)}
+              style={{
+                flex: 2, padding: "11px 0",
+                background: method ? "#775a19" : "#d1c5b4",
+                border: "none", borderRadius: 4,
+                cursor: method ? "pointer" : "not-allowed",
+                fontSize: "0.8rem", letterSpacing: "0.07em", textTransform: "uppercase",
+                color: "white", transition: "background 0.2s",
+              }}
+            >
+              {method === "cod" ? "Place Order" : method ? `Pay with ${methods.find(m2 => m2.id === method)?.label}` : "Select a Method"}
+            </button>
+          )}
         </div>
+
       </div>
     </div>
   );
