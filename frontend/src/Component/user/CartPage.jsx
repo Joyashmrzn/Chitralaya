@@ -136,7 +136,7 @@ const PurchaseModal = ({ items, total, onClose, onConfirm }) => {
   const methods = [
     { id: "cod",    label: "Cash on Delivery", icon: "payments",               desc: "Pay when your artwork arrives" },
     { id: "esewa",  label: "eSewa",             icon: "account_balance_wallet", desc: "Nepal's leading digital wallet" },
-    { id: "khalti", label: "Khalti",            icon: "account_balance_wallet", desc: "Fast & secure mobile payment" },
+    // { id: "khalti", label: "Khalti",            icon: "account_balance_wallet", desc: "Fast & secure mobile payment" },
   ];
 
   const inputStyle = {
