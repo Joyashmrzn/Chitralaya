@@ -442,7 +442,7 @@ const handleRemoveConfirm = async () => {
 
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20, paddingTop: 16, borderTop: "2px solid #1a1c1b" }}>
                 <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.1rem" }}>Total</span>
-                <span style={{ fontSize: "1.3rem", fontWeight: 500, color: "#775a19" }}>${total.toLocaleString()}</span>
+                <span style={{ fontSize: "1.3rem", fontWeight: 500, color: "#775a19" }}>Rs. {total.toLocaleString()}</span>
               </div>
 
               {availableItems.length < items.length && (
