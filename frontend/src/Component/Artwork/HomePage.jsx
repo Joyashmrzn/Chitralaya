@@ -198,7 +198,7 @@ export default function HomePage() {
   const [sort,          setSort]          = useState("-created_at");
   const [page,          setPage]          = useState(1);
   const [committed,     setCommitted]     = useState({});
-
+  const [filterOpen, setFilterOpen] = useState(false);
   const searchTimer = useRef(null);
   const toast = useToast();
   const navRef = useRef(null);           
@@ -287,10 +287,11 @@ export default function HomePage() {
   useEffect(() => { loadArtworks(); }, [loadArtworks]);
 
   // Handlers
-  const applyFilters = () => {
-    setCommitted({ minPrice, maxPrice, medium: selectedMedium, category: selectedCat, availableOnly, search, orientations });
-    setPage(1);
-  };
+ const applyFilters = () => {
+  setCommitted({ minPrice, maxPrice, medium: selectedMedium, category: selectedCat, availableOnly, search, orientations });
+  setPage(1);
+  setFilterOpen(false);
+};
 
   const handleSearch = (val) => {
     setSearch(val);
@@ -421,78 +422,88 @@ export default function HomePage() {
       <div className="page-wrapper">
 
         {/* ── SIDEBAR ── */}
-        <aside>
-          <div className="filter-section">
-            <h3>Price Range</h3>
-            <div className="price-inputs">
-              <input className="price-input" type="number" placeholder="Min $" min="0"
-                value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
-              <span className="price-sep">–</span>
-              <input className="price-input" type="number" placeholder="Max $" min="0"
-                value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
-            </div>
-          </div>
+        {filterOpen && (
+  <div className="filter-overlay" onClick={() => setFilterOpen(false)} />
+)}
+<aside className={filterOpen ? "filter-open" : ""}>
+  <div className="filter-drawer-header">
+    <span>Filters</span>
+    <button className="filter-close-btn" onClick={() => setFilterOpen(false)}>
+      <Icon name="close" size={20} />
+    </button>
+  </div>
 
-          <div className="filter-section">
-            <h3>Canvas Style</h3>
-            <div className="chip-group">
-              <div className={`chip${selectedMedium === "" ? " active" : ""}`} onClick={() => setSelectedMedium("")}>All</div>
-              {mediums.map((m) => (
-                <div key={m.id} className={`chip${selectedMedium === m.id ? " active" : ""}`} onClick={() => setSelectedMedium(m.id)}>{m.name}</div>
-              ))}
-            </div>
-          </div>
+  <div className="filter-section">
+    <h3>Price Range</h3>
+    <div className="price-inputs">
+      <input className="price-input" type="number" placeholder="Min $" min="0"
+        value={minPrice} onChange={(e) => setMinPrice(e.target.value)} />
+      <span className="price-sep">–</span>
+      <input className="price-input" type="number" placeholder="Max $" min="0"
+        value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
+    </div>
+  </div>
 
-          <div className="filter-section">
-            <h3>Category</h3>
-            <select className="cat-select" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}>
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
+  <div className="filter-section">
+    <h3>Canvas Style</h3>
+    <div className="chip-group">
+      <div className={`chip${selectedMedium === "" ? " active" : ""}`} onClick={() => setSelectedMedium("")}>All</div>
+      {mediums.map((m) => (
+        <div key={m.id} className={`chip${selectedMedium === m.id ? " active" : ""}`} onClick={() => setSelectedMedium(m.id)}>{m.name}</div>
+      ))}
+    </div>
+  </div>
 
-          <div className="filter-section">
-            <h3>Orientation</h3>
-            <div className="check-list">
-              {[["portrait","Vertical Portrait"],["landscape","Horizontal Landscape"],["square","Square Format"]].map(([val, label]) => (
-                <label key={val} className="check-label">
-                  <input type="checkbox" checked={orientations.includes(val)} onChange={() => toggleOrientation(val)} />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+  <div className="filter-section">
+    <h3>Category</h3>
+    <select className="cat-select" value={selectedCat} onChange={(e) => setSelectedCat(e.target.value)}>
+      <option value="">All Categories</option>
+      {categories.map((c) => (
+        <option key={c.id} value={c.id}>{c.name}</option>
+      ))}
+    </select>
+  </div>
 
-          <div className="filter-section">
-            <h3>Availability</h3>
-            <div className="toggle-row">
-              <label className="tog-wrap">
-                <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} />
-                <span className="tog-slider" />
-              </label>
-              <span>Available Only</span>
-            </div>
-          </div>
+  <div className="filter-section">
+    <h3>Orientation</h3>
+    <div className="check-list">
+      {[["portrait","Vertical Portrait"],["landscape","Horizontal Landscape"],["square","Square Format"]].map(([val, label]) => (
+        <label key={val} className="check-label">
+          <input type="checkbox" checked={orientations.includes(val)} onChange={() => toggleOrientation(val)} />
+          <span>{label}</span>
+        </label>
+      ))}
+    </div>
+  </div>
 
-          <div style={{ display: "flex", gap: 10 }}>
-            <button className="apply-btn" onClick={applyFilters}>Apply Filters</button>
-            <button
-              className="apply-btn"
-              style={{ background: "transparent", color: "var(--ch-primary)", border: "1px solid var(--ch-primary)" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "var(--ch-surface-container)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-              onClick={() => {
-                setMinPrice(""); setMaxPrice(""); setSelectedMedium(""); setSelectedCat("");
-                setOrientations([]); setSelectedColor(""); setAvailableOnly(false);
-                setSearch(""); setSort("-created_at"); setPage(1); setCommitted({});
-              }}
-            >
-              Reset
-            </button>
-          </div>
-        </aside>
+  <div className="filter-section">
+    <h3>Availability</h3>
+    <div className="toggle-row">
+      <label className="tog-wrap">
+        <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} />
+        <span className="tog-slider" />
+      </label>
+      <span>Available Only</span>
+    </div>
+  </div>
+
+  <div style={{ display: "flex", gap: 10 }}>
+    <button className="apply-btn" onClick={applyFilters}>Apply Filters</button>
+    <button
+      className="apply-btn"
+      style={{ background: "transparent", color: "var(--ch-primary)", border: "1px solid var(--ch-primary)" }}
+      onMouseEnter={e => { e.currentTarget.style.background = "var(--ch-surface-container)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+      onClick={() => {
+        setMinPrice(""); setMaxPrice(""); setSelectedMedium(""); setSelectedCat("");
+        setOrientations([]); setSelectedColor(""); setAvailableOnly(false);
+        setSearch(""); setSort("-created_at"); setPage(1); setCommitted({});
+      }}
+    >
+      Reset
+    </button>
+  </div>
+</aside>
 
         {/* ── GALLERY ── */}
         <div className="gallery-main">
@@ -501,6 +512,10 @@ export default function HomePage() {
               <h1>The Collection</h1>
               <p>Discover original oil and acrylic masterpieces.</p>
             </div>
+            <button className="filter-toggle-btn" onClick={() => setFilterOpen(true)}>
+    <Icon name="tune" size={18} />
+    Filters
+  </button>
             <div className="gallery-controls">
               <div className="search-wrap">
                 <span className="mso search-icon">search</span>

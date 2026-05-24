@@ -559,3 +559,93 @@
   color: #1a1c1b !important;
   font-size: 24px !important;
 }
+/* ── FILTER DRAWER (mobile slide-in) ── */
+.chitralaya-root .filter-drawer-header {
+  display: none;
+}
+
+.chitralaya-root .filter-toggle-btn {
+  display: none;
+}
+
+.chitralaya-root .filter-overlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  /* Filter toggle button — appears in gallery header */
+  .chitralaya-root .filter-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--ch-surface-container);
+    border: 1px solid var(--ch-outline-variant);
+    border-radius: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    color: var(--ch-on-surface);
+    cursor: pointer;
+    align-self: flex-start;
+    flex-shrink: 0;
+  }
+
+  /* Dim overlay behind the drawer */
+  .chitralaya-root .filter-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    background: rgba(26, 28, 27, 0.4);
+    backdrop-filter: blur(2px);
+  }
+
+  /* Aside becomes a fixed drawer */
+  .chitralaya-root aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    z-index: 200;
+    background: var(--ch-surface);
+    border-right: 1px solid var(--ch-outline-variant);
+    overflow-y: auto;
+    padding: 24px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+  }
+
+  .chitralaya-root aside.filter-open {
+    transform: translateX(0);
+  }
+
+  /* Drawer header with close button */
+  .chitralaya-root .filter-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--ch-on-surface);
+  }
+
+  .chitralaya-root .filter-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ch-on-surface-variant);
+    display: flex;
+    align-items: center;
+    padding: 4px;
+  }
+
+  /* Hide the aside from normal document flow on mobile */
+  .chitralaya-root .page-wrapper {
+    flex-direction: column;
+  }
+}

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../user/api";
-
+import "./ArtworkDetail.css";
 
 
 // ── Icon helper ───────────────────────────────────────────────────────────────
@@ -363,6 +363,7 @@ const Skel = ({ w = "100%", h = 20, style = {} }) => (
 
 // ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function ArtworkDetailPage() {
+  const [detailMenuOpen, setDetailMenuOpen] = useState(false);
   const { id }       = useParams();
   const navigate     = useNavigate();
   const toast        = useToast();
@@ -375,11 +376,18 @@ export default function ArtworkDetailPage() {
   const [tab,      setTab]      = useState("details");
   const [wishlist, setWishlist] = useState(false);
   const [showPurchase, setShowPurchase] = useState(false);
-
+  const [openSection, setOpenSection] = useState(null);
+  
   const token   = localStorage.getItem("token");
   const user    = JSON.parse(localStorage.getItem("user") || "null");
   const isLoggedIn = !!token && !!user;
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
   // ── Load artwork ──
   useEffect(() => {
     setLoading(true);
@@ -533,26 +541,69 @@ const handleConfirmPurchase = async (method) => {
       `}</style>
 
       {/* NAV */}
-      <nav className="nav">
-        <div className="nav-inner">
-          <button className="brand" onClick={() => navigate("/")}>Chitralaya</button>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.82rem", color: "var(--ch-on-surface-variant)" }}>
-            <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ch-on-surface-variant)", fontSize: "0.82rem" }}>Shop</button>
-            <Icon name="chevron_right" size={14} />
-            {category && <><span>{category}</span><Icon name="chevron_right" size={14} /></>}
-            <span style={{ color: "var(--ch-primary)" }}>{artwork?.title || "…"}</span>
-          </div>
-          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-            <button className="icon-btn" title="Cart" onClick={() => navigate("/cart")}>
-              <Icon name="shopping_cart" />
-            </button>
-            {isLoggedIn
-              ? <button onClick={() => navigate(user?.role === "admin" ? "/admin/dashboard" : "/dashboard")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ch-primary)", fontFamily: "'Cormorant Garamond',serif", fontSize: "1rem" }}>{user?.full_name || user?.email}</button>
-              : <button className="primary-btn" style={{ flex: "none", padding: "8px 20px" }} onClick={() => navigate("/login")}>Sign In</button>
-            }
-          </div>
-        </div>
-      </nav>
+   <nav className="nav">
+  <div className="nav-inner">
+    <button className="brand" onClick={() => navigate("/")}>Chitralaya</button>
+
+    <div className="ch-breadcrumb" style={{ alignItems: "center", gap: 8, fontSize: "0.82rem", color: "var(--ch-on-surface-variant)" }}>
+      <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ch-on-surface-variant)", fontSize: "0.82rem" }}>Shop</button>
+      <Icon name="chevron_right" size={14} />
+      {category && <><span>{category}</span><Icon name="chevron_right" size={14} /></>}
+      <span style={{ color: "var(--ch-primary)" }}>{artwork?.title || "…"}</span>
+    </div>
+
+    <div style={{ display: "flex", gap: 12, alignItems: "center" }} className="ch-nav-actions">
+      <button className="icon-btn" title="Cart" onClick={() => navigate("/cart")}>
+        <Icon name="shopping_cart" />
+      </button>
+      {isLoggedIn
+        ? <button
+            onClick={() => navigate(user?.role === "admin" ? "/admin/dashboard" : "/user/dashboard")}
+            className="ch-user-btn"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ch-primary)", fontFamily: "'Cormorant Garamond',serif", fontSize: "1rem" }}
+          >
+            {user?.full_name || user?.email}
+          </button>
+        : <button onClick={() => navigate("/login")} style={{ padding: "6px 14px", background: "var(--ch-primary)", color: "white", border: "none", borderRadius: 4, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem", letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>Sign In</button>
+      }
+      <button
+        className="ch-detail-hamburger"
+        onClick={() => setDetailMenuOpen(o => !o)}
+        aria-label={detailMenuOpen ? "Close menu" : "Open menu"}
+      >
+        <Icon name={detailMenuOpen ? "close" : "menu"} size={24} />
+      </button>
+    </div>
+  </div>
+
+  {detailMenuOpen && (
+    <div className="ch-detail-mobile-menu">
+      <button className="ch-detail-menu-item" onClick={() => { navigate("/"); setDetailMenuOpen(false); }}>
+        <Icon name="home" size={18} />
+        Shop / Home
+      </button>
+      <button className="ch-detail-menu-item" onClick={() => { navigate("/cart"); setDetailMenuOpen(false); }}>
+        <Icon name="shopping_cart" size={18} />
+        Cart
+      </button>
+      {isLoggedIn && (
+        <>
+          <button className="ch-detail-menu-item" onClick={() => { navigate(user?.role === "admin" ? "/admin/dashboard" : "/user/dashboard"); setDetailMenuOpen(false); }}>
+            <Icon name="dashboard" size={18} />
+            {user?.role === "admin" ? "Admin Dashboard" : "My Dashboard"}
+          </button>
+          <div className="ch-detail-menu-label">Signed in as {user?.full_name || user?.email}</div>
+        </>
+      )}
+      {!isLoggedIn && (
+        <button className="ch-detail-menu-item" onClick={() => { navigate("/login"); setDetailMenuOpen(false); }}>
+          <Icon name="login" size={18} />
+          Sign In
+        </button>
+      )}
+    </div>
+  )}
+</nav>
 
       {/* MAIN */}
       <div className="detail-wrap" style={{ maxWidth: 1400, margin: "0 auto", padding: "120px 48px 80px" }}>
@@ -636,12 +687,53 @@ const handleConfirmPurchase = async (method) => {
                 )}
 
                 {/* Price */}
-                <div style={{ fontSize: "2.4rem", fontWeight: 300, color: "var(--ch-on-surface)", marginBottom: 32 }}>
-                  Rs {price}
-                </div>
+               <div className="ch-price" style={{ fontWeight: 300, color: "var(--ch-on-surface)", marginBottom: 32 }}>
+                Rs {price}
+              </div>
+        {/* Mobile inline specs accordion — hidden on desktop */}
+<div className="ch-specs-mobile" style={{ marginBottom: 28, borderTop: "1px solid var(--ch-outline-variant)" }}>
+  <button
+    onClick={() => setOpenSection(openSection === "specs" ? null : "specs")}
+    style={{
+      width: "100%", display: "flex", justifyContent: "space-between",
+      alignItems: "center", padding: "16px 0", background: "none",
+      border: "none", borderBottom: "1px solid var(--ch-outline-variant)",
+      cursor: "pointer", textAlign: "left",
+    }}
+  >
+    <span style={{
+      fontSize: "0.8rem", letterSpacing: "0.1em",
+      textTransform: "uppercase", color: "var(--ch-on-surface)",
+      fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
+    }}>
+      Specifications
+    </span>
+    <Icon name={openSection === "specs" ? "expand_less" : "expand_more"} size={20} color="var(--ch-on-surface-variant)" />
+  </button>
 
+  {openSection === "specs" && (
+    <div style={{ paddingBottom: 16 }}>
+      {[
+        ["Title",       artwork.title],
+        ["Artist",      artist],
+        ["Medium",      medium],
+        ["Category",    category],
+        ["Width",       artwork.width  ? `${artwork.width} cm`  : null],
+        ["Height",      artwork.height ? `${artwork.height} cm` : null],
+        ["Orientation", artwork.orientation],
+        ["Status",      artwork.status],
+        ["Price",       `Rs. ${price}`],
+      ].filter(([, v]) => v).map(([label, val]) => (
+        <div key={label} className="spec-row">
+          <span style={{ color: "var(--ch-on-surface-variant)" }}>{label}</span>
+          <span style={{ fontWeight: 500, textTransform: label === "Status" || label === "Orientation" ? "capitalize" : "none" }}>{val}</span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
                 {/* Specs */}
-                <div style={{ marginBottom: 32 }}>
+                <div style={{ marginBottom: 32 }} className="ch-specs-inline">
                   {[
                     ["Dimensions", artwork.width && artwork.height ? `${artwork.width} × ${artwork.height} cm` : null],
                     ["Medium",     medium],
@@ -665,7 +757,7 @@ const handleConfirmPurchase = async (method) => {
 
                 {/* Description */}
                 {artwork.description && (
-                  <p style={{ fontSize: "0.92rem", lineHeight: 1.8, color: "var(--ch-on-surface-variant)", marginBottom: 36 }}>
+                  <p  style={{ fontSize: "0.92rem", lineHeight: 1.8, color: "var(--ch-on-surface-variant)", marginBottom: 36 }}>
                     {artwork.description}
                   </p>
                 )}
@@ -704,9 +796,9 @@ const handleConfirmPurchase = async (method) => {
                   <Icon name="local_shipping" size={20} color="var(--ch-primary)" style={{ marginTop: 2 }} />
                   <div>
                     <div style={{ fontSize: "0.85rem", fontWeight: 500, marginBottom: 3 }}>White Glove Delivery</div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--ch-on-surface-variant)", lineHeight: 1.6 }}>
+                    {/* <div style={{ fontSize: "0.78rem", color: "var(--ch-on-surface-variant)", lineHeight: 1.6 }}>
                       Arrives in 7–10 business days. Fully insured with professional packaging.
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </>
@@ -721,73 +813,174 @@ const handleConfirmPurchase = async (method) => {
 
         {/* ── TABS ── */}
         {!loading && artwork && (
-          <div style={{ marginTop: 80 }}>
-            <div style={{ display: "flex", gap: 40, borderBottom: "1px solid var(--ch-outline-variant)", marginBottom: 48, overflowX: "auto" }}>
-              {[["details","Exhibition Details"], ["specs","Specifications"], ["shipping","Shipping & Returns"]].map(([key,label]) => (
-                <button key={key} className={`tab-btn${tab === key ? " active" : ""}`} onClick={() => setTab(key)}>{label}</button>
-              ))}
-            </div>
+  <div style={{ marginTop: 80 }} className="ch-tabs">
+    {isMobile ? (
+      // ── MOBILE: Accordion ──
+      <div style={{ borderTop: "1px solid var(--ch-outline-variant)" }}>
+        {[
+          { key: "details",  label: "Exhibition Details" },
+          // { key: "specs",    label: "Specifications" },
+          { key: "shipping", label: "Shipping & Returns" },
+        ].map(({ key, label }) => (
+          <div key={key} style={{ borderBottom: "1px solid var(--ch-outline-variant)" }}>
+            <button
+              onClick={() => setOpenSection(openSection === key ? null : key)}
+              style={{
+                width: "100%", display: "flex", justifyContent: "space-between",
+                alignItems: "center", padding: "16px 0", background: "none",
+                border: "none", cursor: "pointer", textAlign: "left",
+              }}
+            >
+              <span style={{
+                fontSize: "0.8rem", letterSpacing: "0.1em",
+                textTransform: "uppercase", color: "var(--ch-on-surface)",
+                fontFamily: "'DM Sans', sans-serif", fontWeight: 500,
+              }}>
+                {label}
+              </span>
+              <Icon name={openSection === key ? "expand_less" : "expand_more"} size={20} color="var(--ch-on-surface-variant)" />
+            </button>
 
-            {tab === "details" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64 }}>
-                <div>
-                  <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.8rem", fontWeight: 400, marginBottom: 20 }}>About the Artwork</h3>
-                  <p style={{ fontSize: "0.92rem", lineHeight: 1.9, color: "var(--ch-on-surface-variant)" }}>
-                    {artwork.description || "No additional description provided for this artwork."}
-                  </p>
-                </div>
-                <div style={{ background: "white", border: "1px solid var(--ch-outline-variant)", borderRadius: 8, padding: 32 }}>
-                  <div style={{ fontSize: "0.6rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--ch-on-surface-variant)", marginBottom: 20 }}>Provenance & Details</div>
-                  <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Title</span><span style={{ fontWeight: 500 }}>{artwork.title}</span></div>
-                  {artist   && <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Artist</span><span style={{ fontWeight: 500 }}>{artist}</span></div>}
-                  {medium   && <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Medium</span><span style={{ fontWeight: 500 }}>{medium}</span></div>}
-                  {category && <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Category</span><span style={{ fontWeight: 500 }}>{category}</span></div>}
-                  <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Authenticity</span><span style={{ fontWeight: 500 }}>Certificate included</span></div>
-                </div>
-              </div>
-            )}
-
-            {tab === "specs" && (
-              <div style={{ maxWidth: 560 }}>
-                {[
-                  ["Title",       artwork.title],
-                  ["Artist",      artist],
-                  ["Medium",      medium],
-                  ["Category",    category],
-                  ["Width",       artwork.width  ? `${artwork.width} cm`  : null],
-                  ["Height",      artwork.height ? `${artwork.height} cm` : null],
-                  ["Orientation", artwork.orientation],
-                  ["Status",      artwork.status],
-                  ["Price", `Rs. ${price}`],
-                ].filter(([, v]) => v).map(([label, val]) => (
-                  <div key={label} className="spec-row">
-                    <span style={{ color: "var(--ch-on-surface-variant)" }}>{label}</span>
-                    <span style={{ fontWeight: 500, textTransform: label === "Status" || label === "Orientation" ? "capitalize" : "none" }}>{val}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {tab === "shipping" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
-                {[
-                  { icon: "local_shipping",     title: "Delivery",    body: "7–10 business days across Nepal. White-glove handling included for all original works." },
-                  { icon: "inventory_2",         title: "Packaging",   body: "Museum-grade packaging with acid-free materials. Every piece individually crated." },
-                  { icon: "verified_user",       title: "Insurance",   body: "Fully insured against damage or loss during transit at no additional cost." },
-                  { icon: "swap_horiz",          title: "Returns",     body: "30-day return policy. Artwork must be in original condition. Contact us to initiate." },
-                ].map(({ icon, title, body }) => (
-                  <div key={title} style={{ padding: "24px", background: "var(--ch-surface-container)", borderRadius: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <Icon name={icon} size={20} color="var(--ch-primary)" />
-                      <span style={{ fontWeight: 500, fontSize: "0.9rem" }}>{title}</span>
+            {openSection === key && (
+              <div style={{ paddingBottom: 24 }}>
+                {key === "details" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                    {/* <p style={{ fontSize: "0.9rem", lineHeight: 1.9, color: "var(--ch-on-surface-variant)" }}>
+                      {artwork.description || "No additional description provided."}
+                    </p> */}
+                    <div style={{ background: "white", border: "1px solid var(--ch-outline-variant)", borderRadius: 8, padding: 20 }}>
+                      <div style={{ fontSize: "0.6rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--ch-on-surface-variant)", marginBottom: 16 }}>Provenance & Details</div>
+                      {[
+                        ["Title", artwork.title],
+                        ["Artist", artist],
+                        ["Medium", medium],
+                        ["Category", category],
+                        ["Authenticity", "Certificate included"],
+                      ].filter(([, v]) => v).map(([label, val]) => (
+                        <div key={label} className="spec-row">
+                          <span style={{ color: "var(--ch-on-surface-variant)" }}>{label}</span>
+                          <span style={{ fontWeight: 500 }}>{val}</span>
+                        </div>
+                      ))}
                     </div>
-                    <p style={{ fontSize: "0.83rem", lineHeight: 1.7, color: "var(--ch-on-surface-variant)" }}>{body}</p>
                   </div>
-                ))}
+                )}
+
+                {key === "specs" && (
+                  <div>
+                    {[
+                      ["Title",       artwork.title],
+                      ["Artist",      artist],
+                      ["Medium",      medium],
+                      ["Category",    category],
+                      ["Width",       artwork.width  ? `${artwork.width} cm`  : null],
+                      ["Height",      artwork.height ? `${artwork.height} cm` : null],
+                      ["Orientation", artwork.orientation],
+                      ["Status",      artwork.status],
+                      ["Price",       `Rs. ${price}`],
+                    ].filter(([, v]) => v).map(([label, val]) => (
+                      <div key={label} className="spec-row">
+                        <span style={{ color: "var(--ch-on-surface-variant)" }}>{label}</span>
+                        <span style={{ fontWeight: 500, textTransform: label === "Status" || label === "Orientation" ? "capitalize" : "none" }}>{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {key === "shipping" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {[
+                      { icon: "local_shipping", title: "Delivery",  body: "7–10 business days across Nepal. White-glove handling included." },
+                      { icon: "inventory_2",    title: "Packaging", body: "Museum-grade packaging with acid-free materials." },
+                      { icon: "verified_user",  title: "Insurance", body: "Fully insured against damage or loss during transit." },
+                      { icon: "swap_horiz",     title: "Returns",   body: "30-day return policy. Contact us to initiate." },
+                    ].map(({ icon, title, body }) => (
+                      <div key={title} style={{ padding: "16px", background: "var(--ch-surface-container)", borderRadius: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                          <Icon name={icon} size={18} color="var(--ch-primary)" />
+                          <span style={{ fontWeight: 500, fontSize: "0.88rem" }}>{title}</span>
+                        </div>
+                        <p style={{ fontSize: "0.82rem", lineHeight: 1.7, color: "var(--ch-on-surface-variant)" }}>{body}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
+        ))}
+      </div>
+    ) : (
+      // ── DESKTOP: Original tabs ──
+      <div>
+        <div style={{ display: "flex", gap: 40, borderBottom: "1px solid var(--ch-outline-variant)", marginBottom: 48, overflowX: "auto" }}>
+          {[["details","Exhibition Details"], ["specs","Specifications"], ["shipping","Shipping & Returns"]].map(([key,label]) => (
+            <button key={key} className={`tab-btn${tab === key ? " active" : ""}`} onClick={() => setTab(key)}>{label}</button>
+          ))}
+        </div>
+
+        {tab === "details" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64 }}>
+            <div>
+              <h3 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.8rem", fontWeight: 400, marginBottom: 20 }}>About the Artwork</h3>
+              <p style={{ fontSize: "0.92rem", lineHeight: 1.9, color: "var(--ch-on-surface-variant)" }}>
+                {artwork.description || "No additional description provided for this artwork."}
+              </p>
+            </div>
+            <div style={{ background: "white", border: "1px solid var(--ch-outline-variant)", borderRadius: 8, padding: 32 }}>
+              <div style={{ fontSize: "0.6rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--ch-on-surface-variant)", marginBottom: 20 }}>Provenance & Details</div>
+              <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Title</span><span style={{ fontWeight: 500 }}>{artwork.title}</span></div>
+              {artist   && <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Artist</span><span style={{ fontWeight: 500 }}>{artist}</span></div>}
+              {medium   && <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Medium</span><span style={{ fontWeight: 500 }}>{medium}</span></div>}
+              {category && <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Category</span><span style={{ fontWeight: 500 }}>{category}</span></div>}
+              <div className="spec-row"><span style={{ color: "var(--ch-on-surface-variant)" }}>Authenticity</span><span style={{ fontWeight: 500 }}>Certificate included</span></div>
+            </div>
+          </div>
         )}
+
+        {tab === "specs" && (
+          <div style={{ maxWidth: 560 }}>
+            {[
+              ["Title",       artwork.title],
+              ["Artist",      artist],
+              ["Medium",      medium],
+              ["Category",    category],
+              ["Width",       artwork.width  ? `${artwork.width} cm`  : null],
+              ["Height",      artwork.height ? `${artwork.height} cm` : null],
+              ["Orientation", artwork.orientation],
+              ["Status",      artwork.status],
+              ["Price",       `Rs. ${price}`],
+            ].filter(([, v]) => v).map(([label, val]) => (
+              <div key={label} className="spec-row">
+                <span style={{ color: "var(--ch-on-surface-variant)" }}>{label}</span>
+                <span style={{ fontWeight: 500, textTransform: label === "Status" || label === "Orientation" ? "capitalize" : "none" }}>{val}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === "shipping" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+            {[
+              { icon: "local_shipping", title: "Delivery",  body: "7–10 business days across Nepal. White-glove handling included for all original works." },
+              { icon: "inventory_2",    title: "Packaging", body: "Museum-grade packaging with acid-free materials. Every piece individually crated." },
+              { icon: "verified_user",  title: "Insurance", body: "Fully insured against damage or loss during transit at no additional cost." },
+              { icon: "swap_horiz",     title: "Returns",   body: "30-day return policy. Artwork must be in original condition. Contact us to initiate." },
+            ].map(({ icon, title, body }) => (
+              <div key={title} style={{ padding: "24px", background: "var(--ch-surface-container)", borderRadius: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                  <Icon name={icon} size={20} color="var(--ch-primary)" />
+                  <span style={{ fontWeight: 500, fontSize: "0.9rem" }}>{title}</span>
+                </div>
+                <p style={{ fontSize: "0.83rem", lineHeight: 1.7, color: "var(--ch-on-surface-variant)" }}>{body}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+)}
 
         {/* ── RELATED ── */}
         {!loading && related.length > 0 && (
