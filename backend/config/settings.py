@@ -15,6 +15,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),
     os.getenv('RAILWAY_PRIVATE_DOMAIN', ''),
+    os.getenv('RENDER_EXTERNAL_HOSTNAME', ''),
 ]
 ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h]
 
