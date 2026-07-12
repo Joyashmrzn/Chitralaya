@@ -17,18 +17,18 @@ Features
 
 Tech Stack
 
-Frontend
+Frontend:
     React + Vite
     Deployed on Vercel
 
-Backend
+Backend:
     Django REST Framework
     PostgreSQL
     Gunicorn
     Deployed on Render
 
 
-Other Integrations
+Other Integrations:
     Cloudinary (media/image storage)
     eSewa & Khalti (payment gateways)
     Google Analytics 4 (GA4)
